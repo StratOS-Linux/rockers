@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::path::Path;
+use std::process::{Command, Stdio};
 
 #[derive(Parser)]
 struct CliArgs {
@@ -27,6 +28,23 @@ fn installed_sources() -> Vec<&'static str> {
 	return sources;
 }
 
+fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
+	let output = Command::new(pkgmgr)
+		.args([search_cmd, pkg])
+		.stdout(Stdio::piped())
+		.output()
+		.unwrap();
+	let result = String::from_utf8(output.stdout).unwrap();
+
+	for line in result.lines() {
+		if pkgmgr=="pacman" && line.contains("[installed]") {
+			print!("\x1B[34m{}\x1B[0m\n", line);
+		} else {
+			println!("{}", line);
+		}
+	}
+}
+
 fn main() {
 	let args = CliArgs::parse();
 	let mut install_cmd = "";
@@ -42,4 +60,6 @@ fn main() {
 		"install"|"i" => install_pkg("pacman", &install_cmd, &args.pkgname),
 		&_ => println!("Invalid"),
 	};
+
+	search_pkg("pacman", "-Ss", "hyprland");
 }
