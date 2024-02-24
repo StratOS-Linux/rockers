@@ -14,17 +14,27 @@ fn pkgmgr_found(p: &str) -> bool {
 	return false;
 }
 
+fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
+	println!("{pkgmgr} {inst_cmd} {pkg}");
+}
+
+// fn installed_sources(pkg: &str) {
+// 	let sources: Vec<&str> = vec!();
+// }
+
 fn main() {
 	let args = CliArgs::parse();
-	println!("Command: {:?} Pkg: {:?}", args.rockcmd, args.pkgname);
+	let mut install_cmd = "";
+	
+	// println!("Command: {:?} Pkg: {:?}", args.rockcmd, args.pkgname);
 
 	if pkgmgr_found("/usr/bin/pacman") {
-		println!("Pacman found.");
+		install_cmd = "-S";
 	}
 
 	match args.rockcmd.as_str() {
-		"i" => println!("-S"),
-		"install" => println!("-S"),
+		"install"|"i" => install_pkg("pacman", &install_cmd, &args.pkgname),
+		// "install" => println!("-S"),
 		&_ => println!("Invalid"),
 	};
 }
