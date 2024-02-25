@@ -49,10 +49,6 @@ fn installed_sources() -> Vec<&'static str> {
 	return sources;
 }
 
-fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
-	println!("{pkgmgr} {inst_cmd} {pkg}"); // TODO
-}
-
 fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
 	if pkgmgr=="pacman" {
 		let output = Command::new(pkgmgr)
@@ -64,6 +60,17 @@ fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
 		for line in result.lines() {
 			println!("{}{RESET}", line);
 		}
+	}
+}
+
+fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
+	let output = Command::new("sudo")
+		.args([pkgmgr, inst_cmd, pkg])
+		.output()
+		.unwrap();
+	let result = String::from_utf8(output.stdout).unwrap();
+	for line in result.lines() {
+		println!("{}{RESET}", line);
 	}
 }
 
@@ -101,7 +108,7 @@ fn main() {
 	// println!("Command: {:?} Pkg: {:?}", args.rockcmd, args.pkgname);
 
 	if pkgmgr_found("/usr/bin/pacman") {
-		install_cmd = "-S";
+		install_cmd = "-S --noconfirm";
 		search_cmd = "-Ss";
 		info_cmd = "-Qi"
 	}
