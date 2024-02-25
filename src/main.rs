@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use clap::Parser;
 use std::path::Path;
-use std::process::{Command, Stdio, exit};
+use std::process::{Command, Stdio};
 
 // const BLACK: &str = "\x1B[30m";
 const BLUE: &str = "\x1B[34m";
@@ -23,17 +23,17 @@ fn pkgmgr_found(p: &str) -> bool {
 	return false;
 }
 
-fn run_shell_cmd(command: &str) -> String {
-	let output = Command::new("bash")
-		.arg("-c")
-		.arg(command)
-		.output()
-		.unwrap_or_else(|e| {
-			eprintln!("Unable to run cmd: {}", e);
-			exit(1);
-		});
-	return String::from_utf8_lossy(&output.stdout).trim().to_string();
-}
+// fn run_shell_cmd(command: &str) -> String {
+// 	let output = Command::new("bash")
+// 		.arg("-c")
+// 		.arg(command)
+// 		.output()
+// 		.unwrap_or_else(|e| {
+// 			eprintln!("Unable to run cmd: {}", e);
+// 			exit(1);
+// 		});
+// 	return String::from_utf8_lossy(&output.stdout).trim().to_string();
+// }
 
 // fn pkg_install_src(pkg: &str) -> Vec<&'static str> {
 // 	let mut sources: Vec<&str> = vec!();
@@ -78,7 +78,8 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 	for line in result.lines() {
 		if pkgmgr=="pacman" && line.contains("[installed]") {
 			println!("{BLUE}{}{RESET}", line);
- 		} else {
+ 		}
+		else if !line.contains("    ") {
 			println!("{}", line);
 		}
 	}
@@ -100,7 +101,10 @@ fn main() {
 	}
 
 	match args.rockcmd.as_str() {
-		"install" | "i" => install_pkg("pacman", &install_cmd, &args.pkgname),
+		"install" | "i" => {
+			search_pkg("pacman", &search_cmd, &args.pkgname);
+			install_pkg("pacman", &install_cmd, &args.pkgname);
+		},
 		"search"  | "s" => search_pkg("pacman", &search_cmd, &args.pkgname),
 		"info"    | "I" => info_pkg("pacman", &info_cmd, &args.pkgname),
 		&_ => println!("Invalid"),
