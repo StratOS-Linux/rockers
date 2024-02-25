@@ -6,8 +6,8 @@ use std::process::{Command, Stdio};
 // const BLACK: &str = "\x1B[30m";
 const BLUE: &str = "\x1B[34m";
 // const YELLOW: &str = "\x1B[33m";
-// const GREEN: &str = "\x1B[32m";
-// const RED: &str = "\x1B[31m";
+const GREEN: &str = "\x1B[32m";
+const RED: &str = "\x1B[31m";
 const RESET: &str = "\x1B[0m";
 
 #[derive(Parser)]
@@ -68,6 +68,7 @@ fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
 }
 
 fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
+	let mut index = 1;
 	let output = Command::new(pkgmgr)
 		.args([search_cmd, pkg])
 		.stdout(Stdio::piped())
@@ -76,12 +77,17 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 	let result = String::from_utf8(output.stdout).unwrap();
 
 	for line in result.lines() {
-		if pkgmgr=="pacman" && line.contains("[installed]") {
-			println!("{BLUE}{}{RESET}", line);
+		let line = &line.replace("extra/", "");
+		if pkgmgr=="pacman" {
+			if line.contains("[installed]") {
+				println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
+				index += 1;
+			}
+			else if !line.contains("    ") {
+				println!("[{BLUE}{}{RESET}]: {}", index, line);
+				index += 1;
+			}
  		}
-		else if !line.contains("    ") {
-			println!("{}", line);
-		}
 	}
 }
 
