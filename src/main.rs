@@ -63,9 +63,23 @@ fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
 	}
 }
 
+fn update_pkg(pkgmgr: &str, update_cmd: &str) {
+	let output = Command::new(pkgmgr)
+		.arg(update_cmd)
+		.stdout(Stdio::piped())
+		.output()
+		.unwrap();
+	let result = String::from_utf8(output.stdout).unwrap();
+
+	for line in result.lines() {
+		println!("{line}");
+ 	}
+}
+
 fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
-	let output = Command::new("sudo")
-		.args([pkgmgr, inst_cmd, pkg])
+	let output = Command::new("sh")
+		.args(["-c", &format!("pkexec {} {} {}", pkgmgr, inst_cmd, pkg)])
+		.stdout(Stdio::piped())
 		.output()
 		.unwrap();
 	let result = String::from_utf8(output.stdout).unwrap();
@@ -103,6 +117,7 @@ fn main() {
 	let mut install_cmd = "";
 	let mut search_cmd = "";
 	let mut info_cmd = "";
+	let mut update_cmd = "";
 	
 	println!("Package managers detected: {:?}", installed_sources());
 	// println!("Command: {:?} Pkg: {:?}", args.rockcmd, args.pkgname);
@@ -110,7 +125,8 @@ fn main() {
 	if pkgmgr_found("/usr/bin/pacman") {
 		install_cmd = "-S --noconfirm";
 		search_cmd = "-Ss";
-		info_cmd = "-Qi"
+		info_cmd = "-Si";
+		update_cmd = "-Syu"
 	}
 
 	match args.rockcmd.as_str() {
@@ -120,7 +136,8 @@ fn main() {
 		},
 		"search"  | "s" => search_pkg("pacman", &search_cmd, &args.pkgname),
 		"info"    | "I" => info_pkg("pacman", &info_cmd, &args.pkgname),
-		&_ => println!("Invalid"),
+		"update"  | "u" => update_pkg("pacman", &update_cmd),
+		&_ => println!("Invalid command."),
 	};
 
 }
