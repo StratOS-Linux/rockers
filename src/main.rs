@@ -101,8 +101,9 @@ fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
 }
 
 fn update_pkg(pkgmgr: &str, update_cmd: &str) {
-	let output = Command::new(pkgmgr)
-		.arg(update_cmd)
+	println!("\n{ITALIC}Updating packages {RESET}");
+	let output = Command::new("sh")
+		.args(["-c", &format!("sudo {} {}", pkgmgr, update_cmd)])
 		.stdout(Stdio::piped())
 		.output()
 		.unwrap();
