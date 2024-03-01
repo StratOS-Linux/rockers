@@ -3,6 +3,7 @@
 use std::path::Path;
 use std::env;
 use std::process::{Command, Stdio};
+use std::io::{BufReader, BufRead};
 
 // const BLACK: &str = "\x1B[30m";
 const VIOLET: &str = "\x1B[35m";
@@ -101,17 +102,27 @@ fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
 }
 
 fn update_pkg(pkgmgr: &str, update_cmd: &str) {
-	println!("\n{ITALIC}Updating packages {RESET}");
-	let output = Command::new("sh")
-		.args(["-c", &format!("sudo {} {}", pkgmgr, update_cmd)])
-		.stdout(Stdio::piped())
-		.output()
-		.unwrap();
-	let result = String::from_utf8(output.stdout).unwrap();
+    println!("\n{ITALIC}Updating packages {RESET}");
 
-	for line in result.lines() {
-		println!("{line}");
- 	}
+    let mut child = Command::new("sh")
+        .args(["-c", &format!("sudo {} {}", pkgmgr, update_cmd)])
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to start command");
+
+    if let Some(stdout) = child.stdout.take() {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                println!("{line}");
+            }
+        }
+    }
+
+    let status = child.wait().expect("Failed to wait for command");
+    if !status.success() {
+        eprintln!("Command failed with exit code: {}", status);
+    }
 }
 
 fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
@@ -141,15 +152,25 @@ fn cleanup_pkg(pkgmgr: &str, cleanup_cmd: &str) {
 }
 
 fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
-	let output = Command::new("sh")
-		.args(["-c", &format!("sudo {} {} {}", pkgmgr, inst_cmd, pkg)])
-		.stdout(Stdio::piped())
-		.output()
-		.unwrap();
-	let result = String::from_utf8(output.stdout).unwrap();
-	for line in result.lines() {
-		println!("{}{RESET}", line);
-	}
+    let mut child = Command::new("sh")
+        .args(["-c", &format!("sudo {} {} {}", pkgmgr, inst_cmd, pkg)])
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to start command");
+
+    if let Some(stdout) = child.stdout.take() {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                println!("{}{RESET}", line);
+            }
+        }
+    }
+
+    let status = child.wait().expect("Failed to wait for command");
+    if !status.success() {
+        eprintln!("Command failed with exit code: {}", status);
+    }
 }
 
 fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
