@@ -1,19 +1,79 @@
-#[allow(dead_code)]
-use clap::Parser;
+#[allow(unused_variables)]
+
 use std::path::Path;
+use std::env;
 use std::process::{Command, Stdio};
 
 // const BLACK: &str = "\x1B[30m";
+const VIOLET: &str = "\x1B[35m";
 const BLUE: &str = "\x1B[34m";
-// const YELLOW: &str = "\x1B[33m";
+const YELLOW: &str = "\x1B[33m";
 const GREEN: &str = "\x1B[32m";
 const RED: &str = "\x1B[31m";
 const RESET: &str = "\x1B[0m";
+const BOLD: &str = "\x1B[1m\x1B[37m";
+const UNDERLINE: &str = "\x1B[1m\x1B[4m";
+const ITALIC: &str = "\x1B[3m\x1B[37m";
 
-#[derive(Parser)]
-struct CliArgs {
-	rockcmd: String,
-	pkgname: String
+fn banner() {
+	let s = format!(r#"
+USAGE: {BOLD}rock{RESET} [function] [flag] <input>                                                                                                                                      
+
+functions:
+    {UNDERLINE}install{RESET}: Install package(s) - Prompts user to respond with 
+             the number(s) associated with the desired package(s).
+             
+    {UNDERLINE}remove{RESET}:  Uninstall package(s) - Prompts user to respond with
+             the number(s) associated with the desired package(s).
+
+    {UNDERLINE}info{RESET}: Provide information about the package.
+             
+    {UNDERLINE}search{RESET}:  Search for package(s) - Does not have a second prompt.
+    
+    {UNDERLINE}update{RESET}:  Updates all packages accessible to the wrapper - does
+             not accept <input>, instead use install to update 
+             individual packages. Has a confirmation prompt.
+
+    {UNDERLINE}cleanup{RESET}: Attempts to repair broken dependencies and remove any
+             unused packages. Does not accept <input>, but has 
+             a confirmation prompt.
+
+flags: 
+    --help/-h: Display this page
+    
+    --description/-d: By default, rock will only display packages 
+    that contain <input> within their name. Use this flag to increase 
+    range and display packages with <input> in their description.
+
+    -y: Makes functions with confirmation prompts run promptless.
+    
+input: 
+    Provide a package name or description.
+
+Example execution:
+    $ rock install foobar
+    Found packages matching 'foobar':
+
+    [{GREEN}0{RESET}]: pyfoobar ({GREEN}apt{RESET})
+    [{GREEN}1{RESET}]: foobarshell ({GREEN}apt{RESET})
+    [{YELLOW}2{RESET}]: foobar ({YELLOW}flatpak{RESET})
+    [{BLUE}3{RESET}]: foobar ({BLUE}pacman{RESET})
+    [{VIOLET}4{RESET}]: foobar-bin ({VIOLET}yay{RESET})
+    [{VIOLET}5{RESET}]: foobar-theme ({VIOLET}yay{RESET})
+    [{RED}6{RESET}]: foobar-web ({RED}snap{RESET})
+
+    Select which package to install [0-5]: 3 4 5
+    Selecting '{VIOLET}foobar-web{RESET}' from package manager '{VIOLET}snap{RESET}'
+    Selecting '{VIOLET}foobar-bin{RESET}' from package manager '{VIOLET}yay{RESET}'
+    Selecting '{VIOLET}foobar-theme{RESET}' from package manager '{VIOLET}yay{RESET}'
+    Are you sure? (y/N)
+    [...]
+
+rock 0.1.3
+A package manager wrapper for StratOS
+Developed by Magitian <magitian@duck.com> for StratOS
+"#);
+	println!("{}", s);
 }
 
 fn pkgmgr_found(p: &str) -> bool {
@@ -22,23 +82,6 @@ fn pkgmgr_found(p: &str) -> bool {
 	}
 	return false;
 }
-
-// fn run_shell_cmd(command: &str) -> String {
-// 	let output = Command::new("bash")
-// 		.arg("-c")
-// 		.arg(command)
-// 		.output()
-// 		.unwrap_or_else(|e| {
-// 			eprintln!("Unable to run cmd: {}", e);
-// 			exit(1);
-// 		});
-// 	return String::from_utf8_lossy(&output.stdout).trim().to_string();
-// }
-
-// fn pkg_install_src(pkg: &str) -> Vec<&'static str> {
-// 	let mut sources: Vec<&str> = vec!();
-	
-// }
 
 fn installed_sources() -> Vec<&'static str> {
 	let mut sources: Vec<&str> = vec!();
@@ -76,9 +119,35 @@ fn update_pkg(pkgmgr: &str, update_cmd: &str) {
  	}
 }
 
+fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
+	println!("\n{ITALIC}Removing packages matching '{}{RESET}'", pkg);
+	let output = Command::new("sh")
+		.args(["-c", &format!("sudo {} {} {}", pkgmgr, remove_cmd, pkg)])
+		.stdout(Stdio::piped())
+		.output()
+		.unwrap();
+	let result = String::from_utf8(output.stdout).unwrap();
+	for line in result.lines() {
+		println!("{line}{RESET}");
+	}
+}
+
+fn cleanup_pkg(pkgmgr: &str, cleanup_cmd: &str) {
+	println!("\n{ITALIC}Removing unused packages");
+	let output = Command::new("sh")
+		.args(["-c", &format!("sudo {} {}", pkgmgr, cleanup_cmd)])
+		.stdout(Stdio::piped())
+		.output()
+		.unwrap();
+	let result = String::from_utf8(output.stdout).unwrap();
+	for line in result.lines() {
+		println!("{line}{RESET}");
+	}
+}
+
 fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
 	let output = Command::new("sh")
-		.args(["-c", &format!("pkexec {} {} {}", pkgmgr, inst_cmd, pkg)])
+		.args(["-c", &format!("sudo {} {} {}", pkgmgr, inst_cmd, pkg)])
 		.stdout(Stdio::piped())
 		.output()
 		.unwrap();
@@ -89,6 +158,7 @@ fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
 }
 
 fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
+	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
 	let output = Command::new(pkgmgr)
 		.args([search_cmd, pkg])
@@ -113,31 +183,59 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 }
 
 fn main() {
-	let args = CliArgs::parse();
-	let mut install_cmd = "";
-	let mut search_cmd = "";
-	let mut info_cmd = "";
-	let mut update_cmd = "";
-	
-	println!("Package managers detected: {:?}", installed_sources());
-	// println!("Command: {:?} Pkg: {:?}", args.rockcmd, args.pkgname);
+	let args: Vec<String> = env::args().collect();
+	let mut rockcmd = "";
+	let mut pkgname = ""; // to handle cases where a pkg name is not required
 
-	if pkgmgr_found("/usr/bin/pacman") {
-		install_cmd = "-S --noconfirm";
-		search_cmd = "-Ss";
-		info_cmd = "-Si";
-		update_cmd = "-Syu"
+	if args.len() == 1 {
+		banner();
 	}
 
-	match args.rockcmd.as_str() {
+	else if args.len() == 2 {
+		rockcmd = &args[1];
+	} 
+	else if args.len() == 3 {
+		rockcmd = &args[1];
+		pkgname = &args[2];
+	}
+	let mut install_cmd = "";
+	let mut search_cmd = "";
+	let mut search_local_cmd = "";
+	let mut info_cmd = "";
+	let mut update_cmd = "";
+	let mut remove_cmd = "";
+	let mut cleanup_cmd = "";
+	let mut pkgmgr = "";
+
+	// println!("Package managers detected: {:?}", installed_sources());
+	// println!("Command: {:?} Pkg: {:?}", rockcmd, pkgname);
+
+	if pkgmgr_found("/usr/bin/pacman") {
+		pkgmgr = "pacman";
+		install_cmd = "-S --noconfirm";
+		search_cmd = "-Ss";
+		search_local_cmd = "-Qs";
+		info_cmd = "-Si";
+		update_cmd = "-Syu --noconfirm";
+		remove_cmd = "-Rns --noconfirm";
+		cleanup_cmd = "-Rns --noconfirm $(pacman -Qtdq)";
+	}
+
+	match rockcmd {
 		"install" | "i" => {
-			search_pkg("pacman", &search_cmd, &args.pkgname);
-			install_pkg("pacman", &install_cmd, &args.pkgname);
+			search_pkg(pkgmgr, &search_cmd, &pkgname);
+			install_pkg(pkgmgr, &install_cmd, &pkgname);
 		},
-		"search"  | "s" => search_pkg("pacman", &search_cmd, &args.pkgname),
-		"info"    | "I" => info_pkg("pacman", &info_cmd, &args.pkgname),
-		"update"  | "u" => update_pkg("pacman", &update_cmd),
+		
+		"search"   | "s" => search_pkg(pkgmgr, &search_cmd, &pkgname),
+		"info"     | "I" => info_pkg(pkgmgr, &info_cmd, &pkgname),
+		"update"   | "u" => update_pkg(pkgmgr, &update_cmd),
+		"remove"   | "r" => {
+			search_pkg(pkgmgr, &search_local_cmd, &pkgname);
+			remove_pkg(pkgmgr, &remove_cmd, &pkgname);
+		},
+		
+		"cleanup"  | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
 		&_ => println!("Invalid command."),
 	};
-
 }
