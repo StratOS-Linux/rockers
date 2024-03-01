@@ -127,7 +127,7 @@ fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
 }
 
 fn cleanup_pkg(pkgmgr: &str, cleanup_cmd: &str) {
-	println!("\n{ITALIC}Removing unused packages");
+	println!("\n{ITALIC}Removing unused packages.{RESET}");
 	let output = Command::new("sh")
 		.args(["-c", &format!("sudo {} {}", pkgmgr, cleanup_cmd)])
 		.stdout(Stdio::piped())
@@ -229,7 +229,7 @@ fn main() {
 			remove_pkg(pkgmgr, &remove_cmd, &pkgname);
 		},
 		
-		"cleanup"  | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
+		"clean"  | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
 		&_ => print!(""),
 	};
 }
