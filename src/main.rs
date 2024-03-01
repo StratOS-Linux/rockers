@@ -3,6 +3,7 @@
 use std::path::Path;
 use std::env;
 use std::process::{Command, Stdio};
+use std::io;
 use std::io::{BufReader, BufRead};
 
 // const BLACK: &str = "\x1B[30m";
@@ -175,6 +176,7 @@ fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
 
 fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
+	let mut input_pkg_no: String = String::new();
 	let mut index = 1;
 	let output = Command::new(pkgmgr)
 		.args([search_cmd, pkg])
@@ -193,6 +195,26 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 			else if !line.contains("    ") {
 				println!("[{BLUE}{}{RESET}]: {}", index, line);
 				index += 1;
+			}
+ 		}
+	}
+
+	println!("{ITALIC}Select which package to install [1-{}]: {RESET}", index-1);
+	io::stdin().read_line(&mut input_pkg_no).expect("Enter a valid integer.");
+	let input_pkg_num: i32 = input_pkg_no.trim().parse().expect("Cannot convert to integer.");
+
+	index=1;
+	for line in result.lines() {
+		let line = &line.replace("extra/", "");
+		if pkgmgr=="pacman" {
+			if line.contains("[installed]") || !line.contains("   ") {
+				index += 1;
+				
+				if index==input_pkg_num+1 {
+					if let Some(pkg_name) = line.split_whitespace().next() {
+						println!("{} => {:?}", index-1, pkg_name);
+					}
+				}
 			}
  		}
 	}
