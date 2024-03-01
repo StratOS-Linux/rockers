@@ -1,4 +1,4 @@
-#[allow(unused_variables)]
+#![allow(dead_code)]
 
 use std::path::Path;
 use std::env;
@@ -19,7 +19,7 @@ fn banner() {
 	let s = format!(r#"
 USAGE: {BOLD}rock{RESET} [function] [flag] <input>                                                                                                                                      
 
-functions:
+{BOLD}functions{RESET}:
     {UNDERLINE}install{RESET}: Install package(s) - Prompts user to respond with 
              the number(s) associated with the desired package(s).
              
@@ -38,20 +38,14 @@ functions:
              unused packages. Does not accept <input>, but has 
              a confirmation prompt.
 
-flags: 
-    --help/-h: Display this page
+{BOLD}flags{RESET}: 
+    {UNDERLINE}--help{RESET}/{UNDERLINE}-h{RESET}: Display this page
     
-    --description/-d: By default, rock will only display packages 
-    that contain <input> within their name. Use this flag to increase 
-    range and display packages with <input> in their description.
-
-    -y: Makes functions with confirmation prompts run promptless.
-    
-input: 
+{BOLD}input{RESET}: 
     Provide a package name or description.
 
-Example execution:
-    $ rock install foobar
+{BOLD}Example execution:{RESET}
+    $ {ITALIC}rock install foobar{RESET}
     Found packages matching 'foobar':
 
     [{GREEN}0{RESET}]: pyfoobar ({GREEN}apt{RESET})
@@ -187,7 +181,7 @@ fn main() {
 	let mut rockcmd = "";
 	let mut pkgname = ""; // to handle cases where a pkg name is not required
 
-	if args.len() == 1 {
+	if args.len() == 1 || args.contains(&String::from("-h")) || args.contains(&String::from("--help")) {
 		banner();
 	}
 
@@ -236,6 +230,6 @@ fn main() {
 		},
 		
 		"cleanup"  | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
-		&_ => println!("Invalid command."),
+		&_ => print!(""),
 	};
 }
