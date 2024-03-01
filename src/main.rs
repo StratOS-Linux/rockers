@@ -174,7 +174,7 @@ fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
     }
 }
 
-fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
+fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
 	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
 	let mut input_pkg_no: String = String::new();
 	let mut index = 1;
@@ -199,7 +199,7 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
  		}
 	}
 
-	println!("{ITALIC}Select which package to install [1-{}]: {RESET}", index-1);
+	println!("{ITALIC}Select package [1-{}]: {RESET}", index-1);
 	io::stdin().read_line(&mut input_pkg_no).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_no.trim().parse().expect("Cannot convert to integer.");
 
@@ -212,12 +212,14 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 				
 				if index==input_pkg_num+1 {
 					if let Some(pkg_name) = line.split_whitespace().next() {
-						println!("{} => {:?}", index-1, pkg_name);
+						// println!("{} => {:?}", index-1, pkg_name);
+						return pkg_name.to_string();
 					}
 				}
 			}
  		}
 	}
+	String::new() // default return item if no match found
 }
 
 fn main() {
@@ -261,16 +263,19 @@ fn main() {
 
 	match rockcmd {
 		"install" | "i" => {
-			search_pkg(pkgmgr, &search_cmd, &pkgname);
-			install_pkg(pkgmgr, &install_cmd, &pkgname);
+			let selected_pkg = search_pkg(pkgmgr, &search_cmd, &pkgname);
+			install_pkg(pkgmgr, &install_cmd, &selected_pkg);
 		},
 		
-		"search"   | "s" => search_pkg(pkgmgr, &search_cmd, &pkgname),
+		"search"   | "s" => {
+			let _selected_pkg = search_pkg(pkgmgr, &search_cmd, &pkgname);
+		},
+		
 		"info"     | "I" => info_pkg(pkgmgr, &info_cmd, &pkgname),
 		"update"   | "u" => update_pkg(pkgmgr, &update_cmd),
 		"remove"   | "r" => {
-			search_pkg(pkgmgr, &search_local_cmd, &pkgname);
-			remove_pkg(pkgmgr, &remove_cmd, &pkgname);
+			let selected_pkg = search_pkg(pkgmgr, &search_local_cmd, &pkgname);
+			remove_pkg(pkgmgr, &remove_cmd, &selected_pkg);
 		},
 		
 		"clean"  | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
