@@ -17,7 +17,7 @@ const ITALIC: &str = "\x1B[3m\x1B[37m";
 
 fn banner() {
 	let s = format!(r#"
-USAGE: {BOLD}rock{RESET} [function] [flag] <input>                                                                                                                                      
+{BOLD}Usage{RESET}: {RED}rock{RESET} {YELLOW}[function] [flag] <input>{RESET}                                                          
 
 {BOLD}functions{RESET}:
     {UNDERLINE}install{RESET}: Install package(s) - Prompts user to respond with 
@@ -65,7 +65,7 @@ USAGE: {BOLD}rock{RESET} [function] [flag] <input>
 
 rock 0.1.3
 A package manager wrapper for StratOS
-Developed by Magitian <magitian@duck.com> for StratOS
+Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com> for StratOS
 "#);
 	println!("{}", s);
 }
