@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::path::Path;
 use std::env;
 use std::process::{Command, Stdio};
@@ -262,7 +260,7 @@ fn main() {
 	let mut rockcmd = "";
 	let mut pkgname = ""; // to handle cases where a pkg name is not required
 
-	if args.len() == 1 || args.contains(&String::from("-h")) || args.contains(&String::from("--help")) {
+	if args.len() == 1  {
 		banner();
 	}
 
@@ -282,8 +280,7 @@ fn main() {
 	let mut cleanup_cmd = "";
 	let mut pkgmgr = "";
 
-	// println!("Package managers detected: {:?}", installed_sources());
-	// println!("Command: {:?} Pkg: {:?}", rockcmd, pkgname);
+	println!("Package managers detected: {:?}", installed_sources());
 
 	if pkgmgr_found("/usr/bin/pacman") {
 		pkgmgr = "pacman";
@@ -313,7 +310,8 @@ fn main() {
 			remove_pkg(pkgmgr, &remove_cmd, &selected_pkg);
 		},
 		
-		"clean"  | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
-		&_ => print!(""),
+		"clean"    | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
+		"-h"  | "--help" => banner(),
+		&_ => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information."),
 	};
 }
