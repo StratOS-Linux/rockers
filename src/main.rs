@@ -128,15 +128,25 @@ fn update_pkg(pkgmgr: &str, update_cmd: &str) {
 
 fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
 	println!("\n{ITALIC}Removing packages matching '{}{RESET}'", pkg);
-	let output = Command::new("sh")
-		.args(["-c", &format!("sudo {} {} {}", pkgmgr, remove_cmd, pkg)])
-		.stdout(Stdio::piped())
-		.output()
-		.unwrap();
-	let result = String::from_utf8(output.stdout).unwrap();
-	for line in result.lines() {
-		println!("{line}{RESET}");
-	}
+    let mut child = Command::new("sh")
+        .args(["-c", &format!("sudo {} {}", pkgmgr, remove_cmd)])
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to start command");
+
+    if let Some(stdout) = child.stdout.take() {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                println!("{line}");
+            }
+        }
+    }
+
+    let status = child.wait().expect("Failed to wait for command");
+    if !status.success() {
+        eprintln!("Command failed with exit code: {}", status);
+    }
 }
 
 fn cleanup_pkg(pkgmgr: &str, cleanup_cmd: &str) {
@@ -172,6 +182,31 @@ fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
     if !status.success() {
         eprintln!("Command failed with exit code: {}", status);
     }
+}
+
+fn display_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
+	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
+	let mut index = 1;
+	let output = Command::new(pkgmgr)
+		.args([search_cmd, pkg])
+		.stdout(Stdio::piped())
+		.output()
+		.unwrap();
+	let result = String::from_utf8(output.stdout).unwrap();
+
+	for line in result.lines() {
+		let line = &line.replace("extra/", "");
+		if pkgmgr=="pacman" {
+			if line.contains("[installed]") {
+				println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
+				index += 1;
+			}
+			else if !line.contains("    ") {
+				println!("[{BLUE}{}{RESET}]: {}", index, line);
+				index += 1;
+			}
+ 		}
+	}
 }
 
 fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
@@ -268,7 +303,7 @@ fn main() {
 		},
 		
 		"search"   | "s" => {
-			let _selected_pkg = search_pkg(pkgmgr, &search_cmd, &pkgname);
+			display_pkg(pkgmgr, &search_cmd, &pkgname);
 		},
 		
 		"info"     | "I" => info_pkg(pkgmgr, &info_cmd, &pkgname),
