@@ -124,28 +124,6 @@ fn update_pkg(pkgmgr: &str, update_cmd: &str) {
     }
 }
 
-fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
-	println!("\n{ITALIC}Removing packages matching '{}{RESET}'", pkg);
-    let mut child = Command::new("sh")
-        .args(["-c", &format!("sudo {} {}", pkgmgr, remove_cmd)])
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Failed to start command");
-
-    if let Some(stdout) = child.stdout.take() {
-        let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                println!("{line}");
-            }
-        }
-    }
-
-    let status = child.wait().expect("Failed to wait for command");
-    if !status.success() {
-        eprintln!("Command failed with exit code: {}", status);
-    }
-}
 
 fn cleanup_pkg(pkgmgr: &str, cleanup_cmd: &str) {
 	println!("\n{ITALIC}Removing unused packages.{RESET}");
@@ -163,6 +141,29 @@ fn cleanup_pkg(pkgmgr: &str, cleanup_cmd: &str) {
 fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
     let mut child = Command::new("sh")
         .args(["-c", &format!("sudo {} {} {}", pkgmgr, inst_cmd, pkg)])
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to start command");
+
+    if let Some(stdout) = child.stdout.take() {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                println!("{}{RESET}", line);
+            }
+        }
+    }
+
+    let status = child.wait().expect("Failed to wait for command");
+    if !status.success() {
+        eprintln!("Command failed with exit code: {}", status);
+    }
+}
+
+fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
+	println!("\n{ITALIC}Removing packages matching '{}{RESET}'", pkg);
+    let mut child = Command::new("sh")
+        .args(["-c", &format!("sudo {} {} {}", pkgmgr, remove_cmd, pkg)])
         .stdout(Stdio::piped())
         .spawn()
         .expect("Failed to start command");
