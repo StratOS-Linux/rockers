@@ -82,7 +82,7 @@ fn installed_sources() -> Vec<&'static str> {
 	if pkgmgr_found("/usr/bin/pacman") { sources.push("pacman"); }
 	if pkgmgr_found("/usr/bin/yay")    { sources.push("yay"); }
 	if pkgmgr_found("/usr/bin/apt")    { sources.push("apt"); }
-	if pkgmgr_found("/usr/bin/flatpak")    { sources.push("apt"); }
+	if pkgmgr_found("/usr/bin/flatpak")    { sources.push("flatpak"); }
 	return sources;
 }
 
