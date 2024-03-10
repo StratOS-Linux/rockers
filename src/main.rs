@@ -14,6 +14,11 @@ const BOLD: &str = "\x1B[1m\x1B[37m";
 const UNDERLINE: &str = "\x1B[1m\x1B[4m";
 const ITALIC: &str = "\x1B[3m\x1B[37m";
 
+struct SearchOutput {
+	pkgmgr: String,
+	pkgname: String,
+}
+
 fn banner() {
 	let s = format!(r#"
 {BOLD}Usage{RESET}: {RED}rock{RESET} {YELLOW}[function] [flag] <input>{RESET}                                                          
@@ -211,7 +216,9 @@ fn display_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 	}
 }
 
-fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
+fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> SearchOutput {
+	let mut search_out = SearchOutput{pkgmgr: String::from(""), pkgname: String::from("")};
+	
 	let mut input_pkg_no: String = String::new();
 	let mut index = 1;
 	let output = Command::new(pkgmgr)
@@ -226,8 +233,9 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
 	}
 	
 	for line in result.lines() {
-		let line = &line.replace("local/", "");
+		let line = &line.replace("extra/", "").replace("local/", "");
 		if pkgmgr=="pacman" {
+			search_out.pkgmgr = String::from("pacman");
 			if line.contains("[installed]") {
 				println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
 				index += 1;
@@ -240,7 +248,7 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
 	}
 
 	if index<=1 {
-		return String::new();
+		return search_out;
 	}
 	
 	println!("{ITALIC}Select package [1-{}]: {RESET}", index-1);
@@ -257,13 +265,13 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
 				if index==input_pkg_num+1 {
 					if let Some(pkg_name) = line.split_whitespace().next() {
 						// println!("{} => {:?}", index-1, pkg_name);
-						return pkg_name.to_string();
+						search_out.pkgname = String::from(pkg_name);
 					}
 				}
 			}
  		}
 	}
-	String::new() // default return item if no match found
+	search_out
 }
 
 fn main() {
@@ -307,7 +315,7 @@ fn main() {
 	match rockcmd {
 		"install" | "i" => {
 			let selected_pkg = search_pkg(pkgmgr, &search_cmd, &pkgname);
-			install_pkg(pkgmgr, &install_cmd, &selected_pkg);
+			install_pkg(&selected_pkg.pkgmgr, &install_cmd, &selected_pkg.pkgname);
 		},
 		
 		"search"   | "s" => {
@@ -318,7 +326,7 @@ fn main() {
 		"update"   | "u" => update_pkg(pkgmgr, &update_cmd),
 		"remove"   | "r" => {
 			let selected_pkg = search_pkg(pkgmgr, &search_local_cmd, &pkgname);
-			remove_pkg(pkgmgr, &remove_cmd, &selected_pkg);
+			remove_pkg(&selected_pkg.pkgmgr, &remove_cmd, &selected_pkg.pkgname);
 		},
 		
 		"clean"    | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
