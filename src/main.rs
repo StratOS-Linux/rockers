@@ -1,8 +1,7 @@
 use std::path::Path;
 use std::env;
 use std::process::{Command, Stdio};
-use std::io;
-use std::io::{BufReader, BufRead};
+use std::io::{self, BufReader, BufRead};
 
 // const BLACK: &str = "\x1B[30m";
 const VIOLET: &str = "\x1B[35m";
