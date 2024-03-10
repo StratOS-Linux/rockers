@@ -73,7 +73,7 @@ fn pkgmgr_found(p: &str) -> bool {
 	if Path::new(p).is_file() {
 		return true;
 	}
-	return false;
+	false
 }
 
 fn installed_sources() -> Vec<&'static str> {
@@ -82,7 +82,7 @@ fn installed_sources() -> Vec<&'static str> {
 	if pkgmgr_found("/usr/bin/yay")    { sources.push("yay"); }
 	if pkgmgr_found("/usr/bin/apt")    { sources.push("apt"); }
 	if pkgmgr_found("/usr/bin/flatpak")    { sources.push("flatpak"); }
-	return sources;
+	sources
 }
 
 fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
