@@ -226,7 +226,7 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
 	}
 	
 	for line in result.lines() {
-		let line = &line.replace("extra/", "");
+		let line = &line.replace("local/", "");
 		if pkgmgr=="pacman" {
 			if line.contains("[installed]") {
 				println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
