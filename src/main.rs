@@ -160,6 +160,10 @@ fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
 }
 
 fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
+	if pkg==String::new() {
+		println!("{ITALIC}No matching packages installed.{RESET}");
+		return;
+	}
 	println!("\n{ITALIC}Removing packages matching '{}{RESET}'", pkg);
     let mut child = Command::new("sh")
         .args(["-c", &format!("sudo {} {} {}", pkgmgr, remove_cmd, pkg)])
@@ -208,7 +212,6 @@ fn display_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 }
 
 fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
-	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
 	let mut input_pkg_no: String = String::new();
 	let mut index = 1;
 	let output = Command::new(pkgmgr)
@@ -218,6 +221,10 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
 		.unwrap();
 	let result = String::from_utf8(output.stdout).unwrap();
 
+	if index>1 {
+		println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
+	}
+	
 	for line in result.lines() {
 		let line = &line.replace("extra/", "");
 		if pkgmgr=="pacman" {
@@ -232,6 +239,10 @@ fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> String {
  		}
 	}
 
+	if index<=1 {
+		return String::new();
+	}
+	
 	println!("{ITALIC}Select package [1-{}]: {RESET}", index-1);
 	io::stdin().read_line(&mut input_pkg_no).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_no.trim().parse().expect("Cannot convert to integer.");
