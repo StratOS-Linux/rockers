@@ -305,6 +305,97 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 	}
 }
 
+fn list_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
+	let mut index = 1;
+	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
+	let mut result = String::new();
+	let mut res_string = String::new();
+	for i in 0..pm.name.len() {
+		let mut output = Command::new("echo").stdout(Stdio::piped()).output().unwrap();
+		if pm.name[i] == "flatpak" {
+			output = Command::new(pm.name[i].clone())
+				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=application"])
+				.stdout(Stdio::piped())
+				.output()
+				.unwrap();
+		}
+		else {
+			output = Command::new(pm.name[i].clone())
+				.args([&pm.search_cmd[&pm.name[i]], pkg])
+				.stdout(Stdio::piped())
+				.output()
+				.unwrap();
+		}
+		result = String::from_utf8(output.stdout).unwrap();
+
+		for line in result.lines() {
+			let line = &line.replace("extra/", "").replace("aur/", "").replace("core/", "");
+
+			if pm.name[i] == "pacman" {
+				if line.contains("[installed]") {
+
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+					res_string += &line[..fwi];
+					res_string += "\n";
+					pacman_idx = index;
+					index += 1;
+				}
+				else if !line.contains("    ") {
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+					// res_string += &format!("{index} PACMAN\n").to_string();
+					res_string += &line[..fwi];
+					res_string += "\n";
+					pacman_idx = index;
+					index += 1;
+				}
+ 			}
+
+			else if pm.name[i] == "yay" {
+				if line.contains("(Installed)") {
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+					res_string += &line[..fwi];
+					res_string += "\n";
+					yay_idx = index;
+					index += 1;
+				}
+				else if !line.contains("    ") {
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+					res_string += &line[..fwi];
+					res_string += "\n";
+					yay_idx = index;
+					index += 1;
+				}
+			}
+
+			else if pm.name[i]=="flatpak" {
+				let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+				res_string += &line[..fwi];
+				res_string += "\n";
+				flatpak_idx = index;
+				index += 1;
+			}
+		}
+	}
+
+	PkgResult {
+		res: res_string,
+		pos: vec![pacman_idx, yay_idx, flatpak_idx],
+	}
+}
+
+fn detect_pkg_mgr(pm: Pkgmgrs, pkg: &str, pkgno: i32) -> &str {
+	let q = list_pkg(pm, pkg);
+	if 1 < pkgno && pkgno <= q.pos[0] {
+		"pacman"
+	} else if q.pos[0] < pkgno && pkgno <= q.pos[1] {
+		"yay"
+	} else if q.pos[1] < pkgno && pkgno <= q.pos[2] {
+		"flatpak"
+	} else {
+		""
+	}
+}
+
 fn search_pkg(pm: Pkgmgrs, pkg: &str) -> SearchOutput {
 	let mut search_out = SearchOutput {
 		pkgmgr: String::from(""),
@@ -413,6 +504,7 @@ fn main() {
 		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall --unused".to_string());
 	}
 
+	println!("{RED}Pkg mgr: {}{RESET}", detect_pkg_mgr(pm.clone(), &pkgname, 16)); // 16 is to check if Flatpak's correct.
 	println!("{:?}", pm);
 
 	match rockcmd {
