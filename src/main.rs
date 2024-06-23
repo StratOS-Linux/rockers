@@ -87,7 +87,7 @@ Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com> for Strat
 }
 
 fn pkgmgr_found(p: &str) -> bool {
-	let new_p = String::from("/usr/bin") + p;
+	let new_p = String::from("/usr/bin/") + p;
 	if Path::new(new_p.as_str()).is_file() {
 		return true;
 	}
@@ -144,6 +144,7 @@ fn update_pkg(pkgmgr: &str, update_cmd: &str) {
 
 fn cleanup_pkg(pm: Pkgmgrs) {
 	println!("\n{ITALIC}Removing unused packages.{RESET}");
+	println!("{} {}", pm.name[0], pm.cleanup_cmd[&pm.name[0]]);
 	let output = Command::new("sh")
 		.args(["-c", &format!("sudo {} {}", &pm.name[0], pm.cleanup_cmd[&pm.name[0]])])
 		.stdout(Stdio::piped())
@@ -204,28 +205,50 @@ fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
     }
 }
 
-fn display_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
+fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
-	let output = Command::new(pkgmgr)
-		.args([search_cmd, pkg])
-		.stdout(Stdio::piped())
-		.output()
-		.unwrap();
-	let result = String::from_utf8(output.stdout).unwrap();
 
-	for line in result.lines() {
-		let line = &line.replace("extra/", "");
-		if pkgmgr=="pacman" {
-			if line.contains("[installed]") {
-				println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
+	for i in 0..pm.name.len() {
+		// println!("{RED}Pkgmgr: {}{RESET}", pm.name[i]);
+		let output = Command::new(pm.name[i].clone())
+			.args([&pm.search_cmd[&pm.name[i]], pkg])
+			.stdout(Stdio::piped())
+			.output()
+			.unwrap();
+		let result = String::from_utf8(output.stdout).unwrap();
+
+		// println!("{RED}RESULT: {RESET}");
+		// println!("{}", result);
+		for line in result.lines() {
+			let line = &line.replace("extra/", "").replace("aur/", "");
+			if pm.name[i] == "pacman" {
+				if line.contains("[installed]") {
+					println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
+					index += 1;
+				}
+				else if !line.contains("    ") {
+					println!("[{BLUE}{}{RESET}]: {}", index, line);
+					index += 1;
+				}
+ 			}
+
+			else if pm.name[i] == "yay" {
+				if line.contains("[installed]") {
+					println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]", index, line.replace("[installed]", ""), "yay");
+					index += 1;
+				}
+				else if !line.contains("    ") {
+					println!("[{VIOLET}{}{RESET}]: {}", index, line);
+					index += 1;
+				}
+			}
+
+			else if pm.name[i]=="flatpak" {
+				println!("{index}{GREEN}Flatpak.{RESET}");
 				index += 1;
 			}
-			else if !line.contains("    ") {
-				println!("[{BLUE}{}{RESET}]: {}", index, line);
-				index += 1;
-			}
- 		}
+		}
 	}
 }
 
@@ -336,35 +359,36 @@ fn main() {
 		pm.info_cmd.insert(pm.name[0].clone(), "-Si".to_string());
 		pm.update_cmd.insert(pm.name[0].clone(), "-Syu".to_string());
 		pm.remove_cmd.insert(pm.name[0].clone(), "-Rns".to_string());
-		pm.cleanup_cmd.insert(pm.name[0].clone(), "-Rcns $(pacman -Qtdq)".to_string());
+		pm.cleanup_cmd.insert(pm.name[0].clone(), "-Rcns $(pacman -Qtdq) --noconfirm".to_string());
 	}
 	
 	if pkgmgr_found("yay") {
 		pm.name.push("yay".to_string());
-		pm.install_cmd.insert(pm.name[1].clone(), "-S".to_string());
-		pm.search_cmd.insert(pm.name[1].clone(), "-Ss".to_string());
-		pm.search_local_cmd.insert(pm.name[1].clone(), "-Qs".to_string());
-		pm.info_cmd.insert(pm.name[1].clone(), "-Si".to_string());
+		pm.install_cmd.insert(pm.name[1].clone(), "-Sa".to_string());
+		pm.search_cmd.insert(pm.name[1].clone(), "-Ssa".to_string());
+		pm.search_local_cmd.insert(pm.name[1].clone(), "-Qsa".to_string());
+		pm.info_cmd.insert(pm.name[1].clone(), "-Sai".to_string());
 		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
 		pm.remove_cmd.insert(pm.name[1].clone(), "-Rns".to_string());
 		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns $(yay -Qtdq)".to_string());
 	}
 	
-	if pkgmgr_found("yay") {
-		pm.name.push("yay".to_string());
-		pm.install_cmd.insert(pm.name[1].clone(), "-S".to_string());
-		pm.search_cmd.insert(pm.name[1].clone(), "-Ss".to_string());
-		pm.search_local_cmd.insert(pm.name[1].clone(), "-Qs".to_string());
-		pm.info_cmd.insert(pm.name[1].clone(), "-Si".to_string());
-		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
-		pm.remove_cmd.insert(pm.name[1].clone(), "-Rns".to_string());
-		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns $(yay -Qtdq)".to_string());
+	if pkgmgr_found("flatpak") {
+		pm.name.push("flatpak".to_string());
+		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
+		pm.search_cmd.insert(pm.name[2].clone(), "search --columns=name".to_string());
+		pm.search_local_cmd.insert(pm.name[2].clone(), "search --columns name".to_string());
+		pm.info_cmd.insert(pm.name[2].clone(), "remote-info".to_string());
+		pm.update_cmd.insert(pm.name[2].clone(), "update".to_string());
+		pm.remove_cmd.insert(pm.name[2].clone(), "uninstall".to_string());
+		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall --unused".to_string());
 	}
 
 	println!("{:?}", pm);
 
 	match rockcmd {
 		
+		"search"   | "s" => display_pkg(pm, &pkgname),
 	 	"clean"    | "c" => cleanup_pkg(pm),
 		"-h"  | "--help" => banner(),
 		_ => {
