@@ -243,17 +243,24 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 
 		for line in result.lines() {
 			let line = &line.replace("extra/", "").replace("aur/", "").replace("core/", "");
+
 			if pm.name[i] == "pacman" {
 				if line.contains("[installed]") {
+
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
 					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
-					res_string += &(line.to_owned() + &String::from('\n'));
+					// res_string += &(line.to_owned() + &String::from('\n'));
+					res_string += &line[..fwi];
+					res_string += "\n";
 					pacman_idx = index;
 					index += 1;
 				}
 				else if !line.contains("    ") {
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
 					println!("[{BLUE}{}{RESET}]: {}", index, line);
 					// res_string += &format!("{index} PACMAN\n").to_string();
-					res_string += &(line.to_owned() + &String::from('\n'));
+					res_string += &line[..fwi];
+					res_string += "\n";
 					pacman_idx = index;
 					index += 1;
 				}
@@ -262,13 +269,17 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 			else if pm.name[i] == "yay" {
 				if line.contains("(Installed)") {
 					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
-					res_string += &(line.to_owned() + &String::from('\n'));
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+					res_string += &line[..fwi];
+					res_string += "\n";
 					yay_idx = index;
 					index += 1;
 				}
 				else if !line.contains("    ") {
 					println!("[{VIOLET}{}{RESET}]: {}", index, line);
-					res_string += &(line.to_owned() + &String::from('\n'));
+					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+					res_string += &line[..fwi];
+					res_string += "\n";
 					yay_idx = index;
 					index += 1;
 				}
@@ -276,7 +287,9 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 
 			else if pm.name[i]=="flatpak" {
 				println!("[{GREEN}{}{RESET}]: {}", index, line);
-				res_string += &(line.to_owned() + &String::from('\n'));
+				let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+				res_string += &line[..fwi];
+				res_string += "\n";
 				flatpak_idx = index;
 				index += 1;
 			}
