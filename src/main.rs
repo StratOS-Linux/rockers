@@ -1,7 +1,7 @@
 use std::path::Path;
-use std::env;
-use std::process::{Command, Stdio};
+use std::{env, process::{Command, Stdio}};
 use std::io::{self, BufReader, BufRead};
+use std::collections::HashMap;
 
 // const BLACK: &str = "\x1B[30m";
 const VIOLET: &str = "\x1B[35m";
@@ -17,6 +17,18 @@ const ITALIC: &str = "\x1B[3m\x1B[37m";
 struct SearchOutput {
 	pkgmgr: String,
 	pkgname: String,
+}
+
+#[derive(Debug)]
+struct Pkgmgrs {
+	name: Vec<String>,
+	install_cmd: HashMap<String, String>,
+	search_cmd:  HashMap<String, String>,
+	search_local_cmd:  HashMap<String, String>,
+	info_cmd:  HashMap<String, String>,
+	update_cmd: HashMap<String, String>,
+	remove_cmd:  HashMap<String, String>,
+	cleanup_cmd:  HashMap<String, String>,
 }
 
 fn banner() {
@@ -75,7 +87,8 @@ Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com> for Strat
 }
 
 fn pkgmgr_found(p: &str) -> bool {
-	if Path::new(p).is_file() {
+	let new_p = String::from("/usr/bin") + p;
+	if Path::new(new_p.as_str()).is_file() {
 		return true;
 	}
 	false
@@ -83,10 +96,10 @@ fn pkgmgr_found(p: &str) -> bool {
 
 fn installed_sources() -> Vec<&'static str> {
 	let mut sources: Vec<&str> = vec!();
-	if pkgmgr_found("/usr/bin/pacman") { sources.push("pacman"); }
-	if pkgmgr_found("/usr/bin/yay")    { sources.push("yay"); }
-	if pkgmgr_found("/usr/bin/apt")    { sources.push("apt"); }
-	if pkgmgr_found("/usr/bin/flatpak")    { sources.push("flatpak"); }
+	if pkgmgr_found("pacman") { sources.push("pacman"); }
+	if pkgmgr_found("yay")    { sources.push("yay"); }
+	if pkgmgr_found("apt")    { sources.push("apt"); }
+	if pkgmgr_found("flatpak")    { sources.push("flatpak"); }
 	sources
 }
 
@@ -129,10 +142,10 @@ fn update_pkg(pkgmgr: &str, update_cmd: &str) {
 }
 
 
-fn cleanup_pkg(pkgmgr: &str, cleanup_cmd: &str) {
+fn cleanup_pkg(pm: Pkgmgrs) {
 	println!("\n{ITALIC}Removing unused packages.{RESET}");
 	let output = Command::new("sh")
-		.args(["-c", &format!("sudo {} {}", pkgmgr, cleanup_cmd)])
+		.args(["-c", &format!("sudo {} {}", &pm.name[0], pm.cleanup_cmd[&pm.name[0]])])
 		.stdout(Stdio::piped())
 		.output()
 		.unwrap();
@@ -217,7 +230,10 @@ fn display_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) {
 }
 
 fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> SearchOutput {
-	let mut search_out = SearchOutput{pkgmgr: String::from(""), pkgname: String::from("")};
+	let mut search_out = SearchOutput{
+		pkgmgr: String::from(""),
+		pkgname: String::from("")
+	};
 	
 	let mut input_pkg_no: String = String::new();
 	let mut index = 1;
@@ -290,47 +306,87 @@ fn main() {
 		rockcmd = &args[1];
 		pkgname = &args[2];
 	}
-	let mut install_cmd = "";
-	let mut search_cmd = "";
-	let mut search_local_cmd = "";
-	let mut info_cmd = "";
-	let mut update_cmd = "";
-	let mut remove_cmd = "";
-	let mut cleanup_cmd = "";
-	let mut pkgmgr = "";
+	// let mut install_cmd = "";
+	// let mut search_cmd = "";
+	// let mut search_local_cmd = "";
+	// let mut info_cmd = "";
+	// let mut update_cmd = "";
+	// let mut remove_cmd = "";
+	// let mut cleanup_cmd = "";
+	// let mut pkgmgr = "";
 
 	println!("Package managers detected: {:?}", installed_sources());
 
-	if pkgmgr_found("/usr/bin/pacman") {
-		pkgmgr = "pacman";
-		install_cmd = "-S --noconfirm";
-		search_cmd = "-Ss";
-		search_local_cmd = "-Qs";
-		info_cmd = "-Si";
-		update_cmd = "-Syu --noconfirm";
-		remove_cmd = "-Rns --noconfirm";
-		cleanup_cmd = "-Rns --noconfirm $(pacman -Qtdq)";
+	let mut pm = Pkgmgrs {
+		name: Vec::new(),
+		install_cmd: HashMap::new(),
+		search_cmd: HashMap::new(),
+		search_local_cmd: HashMap::new(),
+		info_cmd: HashMap::new(),
+		update_cmd: HashMap::new(),
+		remove_cmd: HashMap::new(),
+		cleanup_cmd: HashMap::new(),
+	};
+	
+	if pkgmgr_found("pacman") {
+		pm.name.push("pacman".to_string());
+		pm.install_cmd.insert(pm.name[0].clone(), "-S".to_string());
+		pm.search_cmd.insert(pm.name[0].clone(), "-Ss".to_string());
+		pm.search_local_cmd.insert(pm.name[0].clone(), "-Qs".to_string());
+		pm.info_cmd.insert(pm.name[0].clone(), "-Si".to_string());
+		pm.update_cmd.insert(pm.name[0].clone(), "-Syu".to_string());
+		pm.remove_cmd.insert(pm.name[0].clone(), "-Rns".to_string());
+		pm.cleanup_cmd.insert(pm.name[0].clone(), "-Rcns $(pacman -Qtdq)".to_string());
+	}
+	
+	if pkgmgr_found("yay") {
+		pm.name.push("yay".to_string());
+		pm.install_cmd.insert(pm.name[1].clone(), "-S".to_string());
+		pm.search_cmd.insert(pm.name[1].clone(), "-Ss".to_string());
+		pm.search_local_cmd.insert(pm.name[1].clone(), "-Qs".to_string());
+		pm.info_cmd.insert(pm.name[1].clone(), "-Si".to_string());
+		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
+		pm.remove_cmd.insert(pm.name[1].clone(), "-Rns".to_string());
+		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns $(yay -Qtdq)".to_string());
+	}
+	
+	if pkgmgr_found("yay") {
+		pm.name.push("yay".to_string());
+		pm.install_cmd.insert(pm.name[1].clone(), "-S".to_string());
+		pm.search_cmd.insert(pm.name[1].clone(), "-Ss".to_string());
+		pm.search_local_cmd.insert(pm.name[1].clone(), "-Qs".to_string());
+		pm.info_cmd.insert(pm.name[1].clone(), "-Si".to_string());
+		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
+		pm.remove_cmd.insert(pm.name[1].clone(), "-Rns".to_string());
+		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns $(yay -Qtdq)".to_string());
 	}
 
+	println!("{:?}", pm);
+
 	match rockcmd {
-		"install" | "i" => {
-			let selected_pkg = search_pkg(pkgmgr, &search_cmd, &pkgname);
-			install_pkg(&selected_pkg.pkgmgr, &install_cmd, &selected_pkg.pkgname);
-		},
 		
-		"search"   | "s" => {
-			display_pkg(pkgmgr, &search_cmd, &pkgname);
-		},
-		
-		"info"     | "I" => info_pkg(pkgmgr, &info_cmd, &pkgname),
-		"update"   | "u" => update_pkg(pkgmgr, &update_cmd),
-		"remove"   | "r" => {
-			let selected_pkg = search_pkg(pkgmgr, &search_local_cmd, &pkgname);
-			remove_pkg(&selected_pkg.pkgmgr, &remove_cmd, &selected_pkg.pkgname);
-		},
-		
-		"clean"    | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
+	 	"clean"    | "c" => cleanup_pkg(pm),
 		"-h"  | "--help" => banner(),
-		&_ => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information."),
-	};
+		_ => {
+			print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information.")
+		},
+	}
+	// match rockcmd {
+	// 	"install" | "i" => {
+	// 		let selected_pkg = search_pkg(pkgmgr, &search_cmd, &pkgname);
+	// 		install_pkg(&selected_pkg.pkgmgr, &install_cmd, &selected_pkg.pkgname);
+	// 	},
+		
+	// 	"search"   | "s" => display_pkg(pkgmgr, &search_cmd, &pkgname),
+	// 	"info"     | "I" => info_pkg(pkgmgr, &info_cmd, &pkgname),
+	// 	"update"   | "u" => update_pkg(pkgmgr, &update_cmd),
+	// 	"remove"   | "r" => {
+	// 		let selected_pkg = search_pkg(pkgmgr, &search_local_cmd, &pkgname);
+	// 		remove_pkg(&selected_pkg.pkgmgr, &remove_cmd, &selected_pkg.pkgname);
+	// 	},
+		
+	// 	"clean"    | "c" => cleanup_pkg(pkgmgr, &cleanup_cmd),
+	// 	"-h"  | "--help" => banner(),
+	// 	&_ => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information."),
+	// };
 }
