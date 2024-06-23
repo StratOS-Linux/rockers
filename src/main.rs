@@ -13,6 +13,7 @@ const RESET: &str = "\x1B[0m";
 const BOLD: &str = "\x1B[1m\x1B[37m";
 const UNDERLINE: &str = "\x1B[1m\x1B[4m";
 const ITALIC: &str = "\x1B[3m\x1B[37m";
+const CYAN: &str = "\x1B[36m";
 
 struct SearchOutput {
 	pkgmgr: String,
@@ -211,11 +212,21 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 
 	for i in 0..pm.name.len() {
 		// println!("{RED}Pkgmgr: {}{RESET}", pm.name[i]);
-		let output = Command::new(pm.name[i].clone())
-			.args([&pm.search_cmd[&pm.name[i]], pkg])
-			.stdout(Stdio::piped())
-			.output()
-			.unwrap();
+		let mut output = Command::new("echo").stdout(Stdio::piped()).output().unwrap();
+		if pm.name[i] == "flatpak" {
+			output = Command::new(pm.name[i].clone())
+				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=name", "--columns=version"])
+				.stdout(Stdio::piped())
+				.output()
+				.unwrap();
+		}
+		else {
+			output = Command::new(pm.name[i].clone())
+				.args([&pm.search_cmd[&pm.name[i]], pkg])
+				.stdout(Stdio::piped())
+				.output()
+				.unwrap();
+		}
 		let result = String::from_utf8(output.stdout).unwrap();
 
 		// println!("{RED}RESULT: {RESET}");
@@ -224,7 +235,7 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 			let line = &line.replace("extra/", "").replace("aur/", "");
 			if pm.name[i] == "pacman" {
 				if line.contains("[installed]") {
-					println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
+					println!("[{CYAN}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
 					index += 1;
 				}
 				else if !line.contains("    ") {
@@ -235,7 +246,7 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 
 			else if pm.name[i] == "yay" {
 				if line.contains("[installed]") {
-					println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]", index, line.replace("[installed]", ""), "yay");
+					println!("[{CYAN}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]", index, line.replace("[installed]", ""), "yay");
 					index += 1;
 				}
 				else if !line.contains("    ") {
@@ -245,7 +256,7 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 			}
 
 			else if pm.name[i]=="flatpak" {
-				println!("{index}{GREEN}Flatpak.{RESET}");
+				println!("[{GREEN}{}{RESET}]: {}", index, line);
 				index += 1;
 			}
 		}
@@ -376,8 +387,8 @@ fn main() {
 	if pkgmgr_found("flatpak") {
 		pm.name.push("flatpak".to_string());
 		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
-		pm.search_cmd.insert(pm.name[2].clone(), "search --columns=name".to_string());
-		pm.search_local_cmd.insert(pm.name[2].clone(), "search --columns name".to_string());
+		pm.search_cmd.insert(pm.name[2].clone(), "search".to_string());
+		pm.search_local_cmd.insert(pm.name[2].clone(), "search".to_string());
 		pm.info_cmd.insert(pm.name[2].clone(), "remote-info".to_string());
 		pm.update_cmd.insert(pm.name[2].clone(), "update".to_string());
 		pm.remove_cmd.insert(pm.name[2].clone(), "uninstall".to_string());
