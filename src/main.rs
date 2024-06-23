@@ -16,7 +16,7 @@ const BOLD: &str = "\x1B[1m\x1B[37m";
 const UNDERLINE: &str = "\x1B[1m\x1B[4m";
 const ITALIC: &str = "\x1B[3m\x1B[37m";
 const CYAN: &str = "\x1B[36m";
-const ORANGE: &str = "\x1B[1;33;40m";
+const HIGHLIGHT: &str = "\x1B[1;37;48;2;165;42;42m";
 
 struct SearchOutput {
 	pkgmgr: String,
@@ -238,7 +238,7 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 			let line = &line.replace("extra/", "").replace("aur/", "").replace("core/", "");
 			if pm.name[i] == "pacman" {
 				if line.contains("[installed]") {
-					println!("{ORANGE}[{}]{RESET}: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
+					println!("[{HIGHLIGHT}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
 					index += 1;
 				}
 				else if !line.contains("    ") {
@@ -249,7 +249,7 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 
 			else if pm.name[i] == "yay" {
 				if line.contains("(Installed)") {
-					println!("[{ORANGE}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]", index, line.replace("(Installed)", ""), "yay");
+					println!("[{HIGHLIGHT}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
 					index += 1;
 				}
 				else if !line.contains("    ") {
