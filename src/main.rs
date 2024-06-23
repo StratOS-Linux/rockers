@@ -4,6 +4,7 @@ use std::path::Path;
 use std::{env, process::{Command, Stdio}};
 use std::io::{self, BufReader, BufRead};
 use std::collections::HashMap;
+use regex::Regex;
 
 // const BLACK: &str = "\x1B[30m";
 const VIOLET: &str = "\x1B[35m";
@@ -23,7 +24,13 @@ struct SearchOutput {
 	pkgname: String,
 }
 
+struct PkgResult {
+	res: String,
+	pos: Vec<i32>,
+}
+
 #[derive(Debug)]
+#[derive(Clone)]
 struct Pkgmgrs {
 	name: Vec<String>,
 	install_cmd: HashMap<String, String>,
@@ -209,16 +216,18 @@ fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
     }
 }
 
-fn display_pkg(pm: Pkgmgrs, pkg: &str) {
+fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
-
+	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
+	let mut result = String::new();
+	let mut res_string = String::new();
 	for i in 0..pm.name.len() {
 		// println!("{RED}Pkgmgr: {}{RESET}", pm.name[i]);
 		let mut output = Command::new("echo").stdout(Stdio::piped()).output().unwrap();
 		if pm.name[i] == "flatpak" {
 			output = Command::new(pm.name[i].clone())
-				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=name", "--columns=version"])
+				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=application"])
 				.stdout(Stdio::piped())
 				.output()
 				.unwrap();
@@ -230,17 +239,22 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 				.output()
 				.unwrap();
 		}
-		let result = String::from_utf8(output.stdout).unwrap();
+		result = String::from_utf8(output.stdout).unwrap();
 
 		for line in result.lines() {
 			let line = &line.replace("extra/", "").replace("aur/", "").replace("core/", "");
 			if pm.name[i] == "pacman" {
 				if line.contains("[installed]") {
 					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
+					res_string += &(line.to_owned() + &String::from('\n'));
+					pacman_idx = index;
 					index += 1;
 				}
 				else if !line.contains("    ") {
 					println!("[{BLUE}{}{RESET}]: {}", index, line);
+					// res_string += &format!("{index} PACMAN\n").to_string();
+					res_string += &(line.to_owned() + &String::from('\n'));
+					pacman_idx = index;
 					index += 1;
 				}
  			}
@@ -248,74 +262,64 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 			else if pm.name[i] == "yay" {
 				if line.contains("(Installed)") {
 					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
+					res_string += &(line.to_owned() + &String::from('\n'));
+					yay_idx = index;
 					index += 1;
 				}
 				else if !line.contains("    ") {
 					println!("[{VIOLET}{}{RESET}]: {}", index, line);
+					res_string += &(line.to_owned() + &String::from('\n'));
+					yay_idx = index;
 					index += 1;
 				}
 			}
 
 			else if pm.name[i]=="flatpak" {
 				println!("[{GREEN}{}{RESET}]: {}", index, line);
+				res_string += &(line.to_owned() + &String::from('\n'));
+				flatpak_idx = index;
 				index += 1;
 			}
 		}
 	}
+	
+	// println!("{RED}{}{RESET}", res_string);
+	println!("{res_string}");
+	println!("Pacman: {pacman_idx}, Yay: {yay_idx}, Flatpak: {flatpak_idx}");
+	PkgResult {
+		res: res_string,
+		pos: vec![pacman_idx, yay_idx, flatpak_idx],
+	}
 }
 
-fn search_pkg(pkgmgr: &str, search_cmd: &str, pkg: &str) -> SearchOutput {
-	let mut search_out = SearchOutput{
+fn search_pkg(pm: Pkgmgrs, pkg: &str) -> SearchOutput {
+	let mut search_out = SearchOutput {
 		pkgmgr: String::from(""),
 		pkgname: String::from("")
 	};
 	
 	let mut input_pkg_no: String = String::new();
 	let mut index = 1;
-	let output = Command::new(pkgmgr)
-		.args([search_cmd, pkg])
-		.stdout(Stdio::piped())
-		.output()
-		.unwrap();
-	let result = String::from_utf8(output.stdout).unwrap();
 
-	if index>1 {
-		println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
-	}
-	
-	for line in result.lines() {
-		let line = &line.replace("extra/", "").replace("local/", "");
-		if pkgmgr=="pacman" {
-			search_out.pkgmgr = String::from("pacman");
-			if line.contains("[installed]") {
-				println!("[{RED}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
-				index += 1;
-			}
-			else if !line.contains("    ") {
-				println!("[{BLUE}{}{RESET}]: {}", index, line);
-				index += 1;
-			}
- 		}
-	}
-
-	if index<=1 {
-		return search_out;
-	}
+	let pkg_output = display_pkg(pm.clone(), pkg);
 	
 	println!("{ITALIC}Select package [1-{}]: {RESET}", index-1);
 	io::stdin().read_line(&mut input_pkg_no).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_no.trim().parse().expect("Cannot convert to integer.");
 
+	if index<=1 {
+		return search_out;
+	}
+
 	index=1;
-	for line in result.lines() {
+	for line in pkg_output.res.lines() {
 		let line = &line.replace("extra/", "");
-		if pkgmgr=="pacman" {
+		if pm.name[0] == "pacman" {
 			if line.contains("[installed]") || !line.contains("   ") {
 				index += 1;
 				
 				if index==input_pkg_num+1 {
 					if let Some(pkg_name) = line.split_whitespace().next() {
-						// println!("{} => {:?}", index-1, pkg_name);
 						search_out.pkgname = String::from(pkg_name);
 					}
 				}
@@ -377,7 +381,7 @@ fn main() {
 	if pkgmgr_found("yay") {
 		pm.name.push("yay".to_string());
 		pm.install_cmd.insert(pm.name[1].clone(), "-Sa".to_string());
-		pm.search_cmd.insert(pm.name[1].clone(), "-Ssa".to_string());
+		pm.search_cmd.insert(pm.name[1].clone(), "-Ssqa".to_string());
 		pm.search_local_cmd.insert(pm.name[1].clone(), "-Qsa".to_string());
 		pm.info_cmd.insert(pm.name[1].clone(), "-Sai".to_string());
 		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
@@ -400,7 +404,9 @@ fn main() {
 
 	match rockcmd {
 		
-		"search"   | "s" => display_pkg(pm, &pkgname),
+		"search"   | "s" => {
+			let _ = display_pkg(pm, &pkgname);
+		},
 	 	"clean"    | "c" => cleanup_pkg(pm),
 		"-h"  | "--help" => banner(),
 		_ => {
