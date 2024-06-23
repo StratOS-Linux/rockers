@@ -232,13 +232,11 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 		}
 		let result = String::from_utf8(output.stdout).unwrap();
 
-		// println!("{RED}RESULT: {RESET}");
-		// println!("{}", result);
 		for line in result.lines() {
 			let line = &line.replace("extra/", "").replace("aur/", "").replace("core/", "");
 			if pm.name[i] == "pacman" {
 				if line.contains("[installed]") {
-					println!("[{HIGHLIGHT}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
+					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
 					index += 1;
 				}
 				else if !line.contains("    ") {
@@ -249,7 +247,7 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 
 			else if pm.name[i] == "yay" {
 				if line.contains("(Installed)") {
-					println!("[{HIGHLIGHT}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
+					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
 					index += 1;
 				}
 				else if !line.contains("    ") {
