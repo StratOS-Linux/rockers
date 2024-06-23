@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused)]
 use std::path::Path;
 use std::{env, process::{Command, Stdio}};
 use std::io::{self, BufReader, BufRead};
@@ -14,6 +16,7 @@ const BOLD: &str = "\x1B[1m\x1B[37m";
 const UNDERLINE: &str = "\x1B[1m\x1B[4m";
 const ITALIC: &str = "\x1B[3m\x1B[37m";
 const CYAN: &str = "\x1B[36m";
+const ORANGE: &str = "\x1B[1;33;40m";
 
 struct SearchOutput {
 	pkgmgr: String,
@@ -232,10 +235,10 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
 		// println!("{RED}RESULT: {RESET}");
 		// println!("{}", result);
 		for line in result.lines() {
-			let line = &line.replace("extra/", "").replace("aur/", "");
+			let line = &line.replace("extra/", "").replace("aur/", "").replace("core/", "");
 			if pm.name[i] == "pacman" {
 				if line.contains("[installed]") {
-					println!("[{CYAN}{}{RESET}]: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
+					println!("{ORANGE}[{}]{RESET}: {GREEN}{}{RESET} [{BLUE}{}{RESET}]", index, line.replace("[installed]", ""), "pacman");
 					index += 1;
 				}
 				else if !line.contains("    ") {
@@ -245,8 +248,8 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) {
  			}
 
 			else if pm.name[i] == "yay" {
-				if line.contains("[installed]") {
-					println!("[{CYAN}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]", index, line.replace("[installed]", ""), "yay");
+				if line.contains("(Installed)") {
+					println!("[{ORANGE}{}{RESET}]: {GREEN}{}{RESET} [{VIOLET}{}{RESET}]", index, line.replace("(Installed)", ""), "yay");
 					index += 1;
 				}
 				else if !line.contains("    ") {
