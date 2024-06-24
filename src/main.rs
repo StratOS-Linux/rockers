@@ -502,7 +502,7 @@ fn main() {
 	if pkgmgr_found("yay") {
 		pm.name.push("yay".to_string());
 		pm.install_cmd.insert(pm.name[1].clone(), "-Sa".to_string());
-		pm.search_cmd.insert(pm.name[1].clone(), "-Ssqa".to_string());
+		pm.search_cmd.insert(pm.name[1].clone(), "-Ssa".to_string());
 		pm.search_local_cmd.insert(pm.name[1].clone(), "-Qsa".to_string());
 		pm.info_cmd.insert(pm.name[1].clone(), "-Sai".to_string());
 		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
@@ -521,7 +521,7 @@ fn main() {
 		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall --unused".to_string());
 	}
 
-	println!("{RED}Pkg mgr: {}{RESET}", detect_pkg_mgr(pm.clone(), &pkgname, 16)); // 16 is to check if Flatpak's correct.
+	println!("{RED}Pkg mgr: {}{RESET}", detect_pkg_mgr(pm.clone(), &pkgname, 16)); // 16 is to check if Flatpak's Emacs is correct.
 	println!("{:?}", pm);
 
 	match rockcmd {
