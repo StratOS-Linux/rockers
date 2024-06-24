@@ -114,35 +114,50 @@ fn installed_sources() -> Vec<&'static str> {
 }
 
 fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
-	// if pkgmgr=="pacman" {
-	// 	let output = Command::new(pkgmgr)
-	// 		.args([info_cmd, pkg, " | grep -i Validated | awk '{print $4}"])
-	// 		.stdout(Stdio::piped())
-	// 		.output()
-	// 		.unwrap();
-	// 	let result = String::from_utf8(output.stdout).unwrap();
-	// 	for line in result.lines() {
-	// 		println!("{}{RESET}", line);
-	// 	}
-	// }
 	let x = display_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
 	println!("{ITALIC}Select package [1-{}]: {RESET}", x.pos[2]);
 	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
 
-	// let pkgmgr = detect_pkg_mgr(&pm, pkg, input_pkg_num); -- don't query repos once again.
-	let mut pkgmgr = "";
+	// don't query repos once again.
+	let mut info_pkgmgr = "";
 	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] {
-		pkgmgr = "pacman";
+		info_pkgmgr = "pacman";
 	} else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] {
-		pkgmgr = "yay";
+		info_pkgmgr = "yay";
 	} else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] {
-		pkgmgr = "flatpak";
+		info_pkgmgr = "flatpak";
 	}
-	println!("{}", pkgmgr);
-	let xx: Vec<&str> = x.res.lines().collect();
-	println!("{}", xx[(input_pkg_num as usize) - 1]);
+	// println!("{}", info_pkgmgr);
+	let tmp: Vec<&str> = x.res.lines().collect();
+	// println!("{}", xx[(input_pkg_num as usize) - 1]);
+	let info_pkgname = tmp[(input_pkg_num as usize) - 1];
+
+	let mut output = Command::new("echo").stdout(Stdio::piped()).spawn().expect("");
+	
+	if info_pkgmgr == "flatpak" {
+		output = Command::new(&info_pkgmgr)
+			.args([&pm.info_cmd[info_pkgmgr], "flathub", info_pkgname])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
+	else {
+		output = Command::new(&info_pkgmgr)
+			.args([&pm.info_cmd[info_pkgmgr], info_pkgname])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
+	if let Some(stdout) = output.stdout.take() {
+		let reader = BufReader::new(stdout);
+		for line in reader.lines() {
+			if let Ok(line) = line {
+				println!("{line}");
+			}
+		}
+	}
 }
 
 fn update_pkg(pm: &Pkgmgrs) {
