@@ -113,21 +113,29 @@ fn installed_sources() -> Vec<&'static str> {
 	sources
 }
 
-fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
-	if pkgmgr=="pacman" {
-		let output = Command::new(pkgmgr)
-			.args([info_cmd, pkg, " | grep -i Validated | awk '{print $4}"])
-			.stdout(Stdio::piped())
-			.output()
-			.unwrap();
-		let result = String::from_utf8(output.stdout).unwrap();
-		for line in result.lines() {
-			println!("{}{RESET}", line);
-		}
-	}
+fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
+	// if pkgmgr=="pacman" {
+	// 	let output = Command::new(pkgmgr)
+	// 		.args([info_cmd, pkg, " | grep -i Validated | awk '{print $4}"])
+	// 		.stdout(Stdio::piped())
+	// 		.output()
+	// 		.unwrap();
+	// 	let result = String::from_utf8(output.stdout).unwrap();
+	// 	for line in result.lines() {
+	// 		println!("{}{RESET}", line);
+	// 	}
+	// }
+	let x = display_pkg(&pm, pkg);
+	let mut input_pkg_str = String::new();
+	println!("{ITALIC}Select package [1-{}]: {RESET}", x.pos[2]);
+	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
+	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
+
+	let pkgmgr = detect_pkg_mgr(&pm, pkg, input_pkg_num);
+	println!("{}", pkgmgr);
 }
 
-fn update_pkg(pm: Pkgmgrs) {
+fn update_pkg(pm: &Pkgmgrs) {
     println!("\n{ITALIC}Updating packages {RESET}");
 
 	let mut output = Command::new("echo") // placeholder for scope purposes.
@@ -177,7 +185,7 @@ fn update_pkg(pm: Pkgmgrs) {
 }
 
 
-fn cleanup_pkg(pm: Pkgmgrs) {
+fn cleanup_pkg(pm: &Pkgmgrs) {
 	println!("\n{ITALIC}Removing unused packages.{RESET}");
 	println!("{} {}", pm.name[0], pm.cleanup_cmd[&pm.name[0]]);
 	let output = Command::new("sh")
@@ -240,7 +248,7 @@ fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
     }
 }
 
-fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
+fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
 	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
@@ -335,7 +343,7 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 	}
 }
 
-fn list_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
+fn list_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	let mut index = 1;
 	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
 	let mut result = String::new();
@@ -413,7 +421,7 @@ fn list_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 	}
 }
 
-fn detect_pkg_mgr(pm: Pkgmgrs, pkg: &str, pkgno: i32) -> &str {
+fn detect_pkg_mgr<'a>(pm: &'a Pkgmgrs, pkg: &'a str, pkgno: i32) -> &'a str {
 	let q = list_pkg(pm, pkg);
 	if 1 < pkgno && pkgno <= q.pos[0] {
 		"pacman"
@@ -426,7 +434,7 @@ fn detect_pkg_mgr(pm: Pkgmgrs, pkg: &str, pkgno: i32) -> &str {
 	}
 }
 
-fn search_pkg(pm: Pkgmgrs, pkg: &str) -> SearchOutput {
+fn search_pkg(pm: &Pkgmgrs, pkg: &str) -> SearchOutput {
 	let mut search_out = SearchOutput {
 		pkgmgr: String::from(""),
 		pkgname: String::from("")
@@ -435,7 +443,7 @@ fn search_pkg(pm: Pkgmgrs, pkg: &str) -> SearchOutput {
 	let mut input_pkg_no: String = String::new();
 	let mut index = 1;
 
-	let pkg_output = display_pkg(pm.clone(), pkg);
+	let pkg_output = display_pkg(&pm, pkg);
 	
 	println!("{ITALIC}Select package [1-{}]: {RESET}", index-1);
 	io::stdin().read_line(&mut input_pkg_no).expect("Enter a valid integer.");
@@ -540,11 +548,12 @@ fn main() {
 	println!("{:?}", pm);
 
 	match rockcmd {
-		"update"   | "u" => update_pkg(pm),
+		"update"   | "u" => update_pkg(&pm),
 		"search"   | "s" => {
-			let _ = display_pkg(pm, &pkgname);
+			let _ = display_pkg(&pm, &pkgname);
 		},
-	 	"clean"    | "c" => cleanup_pkg(pm),
+		"info"     | "I" => info_pkg(&pm, &pkgname),
+	 	"clean"    | "c" => cleanup_pkg(&pm),
 		"-h"  | "--help" => banner(),
 		_ => {
 			print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information.")
