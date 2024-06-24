@@ -4,7 +4,6 @@ use std::path::Path;
 use std::{env, process::{Command, Stdio}};
 use std::io::{self, BufReader, BufRead};
 use std::collections::HashMap;
-use regex::Regex;
 
 // const BLACK: &str = "\x1B[30m";
 const VIOLET: &str = "\x1B[35m";
