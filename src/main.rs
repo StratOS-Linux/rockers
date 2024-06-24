@@ -138,9 +138,23 @@ fn update_pkg(pm: Pkgmgrs) {
 		.expect("");
 	
 	for i in 0..pm.name.len() {
-		if pm.name[i] == "pacman" || pm.name[i] == "apt" { // run with sudo.
+		if pm.name[i] == "pacman" { // run with sudo.
 			output = Command::new("sh")
-				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]])])
+				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]]), "--noconfirm"])
+				.stdout(Stdio::piped())
+				.spawn()
+				.expect("Failed to start command");
+		}
+		else if pm.name[i] == "yay" { // run with sudo.
+			output = Command::new("sh")
+				.args(["-c", &format!("{} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]]), "--noconfirm"])
+				.stdout(Stdio::piped())
+				.spawn()
+				.expect("Failed to start command");
+		}
+		else if pm.name[i] == "apt" { // run with sudo.
+			output = Command::new("sh")
+				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]]), "-y"])
 				.stdout(Stdio::piped())
 				.spawn()
 				.expect("Failed to start command");
@@ -475,8 +489,7 @@ fn main() {
 	// let mut cleanup_cmd = "";
 	// let mut pkgmgr = "";
 
-	println!("Package managers detected: {:?}", installed_sources());
-
+	println!("{ITALIC}Package managers detected:{RESET}");
 	let mut pm = Pkgmgrs {
 		name: Vec::new(),
 		install_cmd: HashMap::new(),
@@ -489,6 +502,7 @@ fn main() {
 	};
 	
 	if pkgmgr_found("pacman") {
+		println!(" - {BLUE}Pacman{RESET}");
 		pm.name.push("pacman".to_string());
 		pm.install_cmd.insert(pm.name[0].clone(), "-S".to_string());
 		pm.search_cmd.insert(pm.name[0].clone(), "-Ss".to_string());
@@ -500,6 +514,7 @@ fn main() {
 	}
 	
 	if pkgmgr_found("yay") {
+		println!(" - {VIOLET}Yay{RESET}");
 		pm.name.push("yay".to_string());
 		pm.install_cmd.insert(pm.name[1].clone(), "-Sa".to_string());
 		pm.search_cmd.insert(pm.name[1].clone(), "-Ssa".to_string());
@@ -511,6 +526,7 @@ fn main() {
 	}
 	
 	if pkgmgr_found("flatpak") {
+		println!(" - {GREEN}Flatpak{RESET}");
 		pm.name.push("flatpak".to_string());
 		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
 		pm.search_cmd.insert(pm.name[2].clone(), "search".to_string());
@@ -521,7 +537,7 @@ fn main() {
 		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall --unused".to_string());
 	}
 
-	println!("{RED}Pkg mgr: {}{RESET}", detect_pkg_mgr(pm.clone(), &pkgname, 16)); // 16 is to check if Flatpak's Emacs is correct.
+	// println!("{RED}Pkg mgr: {}{RESET}", detect_pkg_mgr(pm.clone(), &pkgname, 16)); // 16 is to check if Flatpak's Emacs is correct.
 	println!("{:?}", pm);
 
 	match rockcmd {
