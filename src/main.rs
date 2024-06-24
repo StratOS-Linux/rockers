@@ -224,74 +224,80 @@ fn display_pkg(pm: Pkgmgrs, pkg: &str) -> PkgResult {
 	let mut res_string = String::new();
 	for i in 0..pm.name.len() {
 		// println!("{RED}Pkgmgr: {}{RESET}", pm.name[i]);
-		let mut output = Command::new("echo").stdout(Stdio::piped()).output().unwrap();
+		let mut output = Command::new("echo")
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("ERROR");
 		if pm.name[i] == "flatpak" {
 			output = Command::new(pm.name[i].clone())
 				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=application"])
 				.stdout(Stdio::piped())
-				.output()
-				.unwrap();
+				.spawn()
+				.expect("");
 		}
 		else {
 			output = Command::new(pm.name[i].clone())
 				.args([&pm.search_cmd[&pm.name[i]], pkg])
 				.stdout(Stdio::piped())
-				.output()
-				.unwrap();
+				.spawn()
+				.expect("");
 		}
-		result = String::from_utf8(output.stdout).unwrap();
+		// result = String::from_utf8(output.stdout).unwrap();
 
-		for line in result.lines() {
-			let line = &line.replace("extra/", "").replace("aur/", "").replace("core/", "");
+		if let Some(stdout) = output.stdout.take() {
+			let reader = BufReader::new(stdout);
+			for line in reader.lines() {
+				let line = &line.unwrap().replace("extra/", "").replace("aur/", "").replace("core/", "");
 
-			if pm.name[i] == "pacman" {
-				if line.contains("[installed]") {
+				if pm.name[i] == "pacman" {
+					if line.contains("[installed]") {
 
+						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
+						// res_string += &(line.to_owned() + &String::from('\n'));
+						res_string += &line[..fwi];
+						res_string += "\n";
+						pacman_idx = index;
+						index += 1;
+					}
+					else if !line.contains("    ") {
+						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+						println!("[{BLUE}{}{RESET}]: {}", index, line);
+						// res_string += &format!("{index} PACMAN\n").to_string();
+						res_string += &line[..fwi];
+						res_string += "\n";
+						pacman_idx = index;
+						index += 1;
+					}
+ 				}
+
+				else if pm.name[i] == "yay" {
+					if line.contains("(Installed)") {
+						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
+						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+						res_string += &line[..fwi];
+						res_string += "\n";
+						yay_idx = index;
+						index += 1;
+					}
+					else if !line.contains("    ") {
+						println!("[{VIOLET}{}{RESET}]: {}", index, line);
+						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+						res_string += &line[..fwi];
+						res_string += "\n";
+						yay_idx = index;
+						index += 1;
+					}
+				}
+
+				else if pm.name[i]=="flatpak" {
+					println!("[{GREEN}{}{RESET}]: {}", index, line);
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
-					// res_string += &(line.to_owned() + &String::from('\n'));
 					res_string += &line[..fwi];
 					res_string += "\n";
-					pacman_idx = index;
+					flatpak_idx = index;
 					index += 1;
 				}
-				else if !line.contains("    ") {
-					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					println!("[{BLUE}{}{RESET}]: {}", index, line);
-					// res_string += &format!("{index} PACMAN\n").to_string();
-					res_string += &line[..fwi];
-					res_string += "\n";
-					pacman_idx = index;
-					index += 1;
-				}
- 			}
-
-			else if pm.name[i] == "yay" {
-				if line.contains("(Installed)") {
-					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
-					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					res_string += &line[..fwi];
-					res_string += "\n";
-					yay_idx = index;
-					index += 1;
-				}
-				else if !line.contains("    ") {
-					println!("[{VIOLET}{}{RESET}]: {}", index, line);
-					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					res_string += &line[..fwi];
-					res_string += "\n";
-					yay_idx = index;
-					index += 1;
-				}
-			}
-
-			else if pm.name[i]=="flatpak" {
-				println!("[{GREEN}{}{RESET}]: {}", index, line);
-				let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-				res_string += &line[..fwi];
-				res_string += "\n";
-				flatpak_idx = index;
-				index += 1;
 			}
 		}
 	}
@@ -508,7 +514,7 @@ fn main() {
 	println!("{:?}", pm);
 
 	match rockcmd {
-		
+
 		"search"   | "s" => {
 			let _ = display_pkg(pm, &pkgname);
 		},
