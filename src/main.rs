@@ -128,28 +128,39 @@ fn info_pkg(pkgmgr: &str, info_cmd: &str, pkg: &str) {
 	}
 }
 
-fn update_pkg(pkgmgr: &str, update_cmd: &str) {
+fn update_pkg(pm: Pkgmgrs) {
     println!("\n{ITALIC}Updating packages {RESET}");
 
-    let mut child = Command::new("sh")
-        .args(["-c", &format!("sudo {} {}", pkgmgr, update_cmd)])
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Failed to start command");
-
-    if let Some(stdout) = child.stdout.take() {
-        let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                println!("{line}");
-            }
-        }
-    }
-
-    let status = child.wait().expect("Failed to wait for command");
-    if !status.success() {
-        eprintln!("Command failed with exit code: {}", status);
-    }
+	let mut output = Command::new("echo") // placeholder for scope purposes.
+		.arg("")
+		.stdout(Stdio::piped())
+		.spawn()
+		.expect("");
+	
+	for i in 0..pm.name.len() {
+		if pm.name[i] == "pacman" || pm.name[i] == "apt" { // run with sudo.
+			output = Command::new("sh")
+				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]])])
+				.stdout(Stdio::piped())
+				.spawn()
+				.expect("Failed to start command");
+		}
+		else if pm.name[i] == "flatpak" {
+			output = Command::new(&pm.name[i])
+				.args([&pm.update_cmd[&pm.name[i]], "--noninteractive"])
+				.stdout(Stdio::piped())
+				.spawn()
+				.expect("");
+		}
+		if let Some(stdout) = output.stdout.take() {
+			let reader = BufReader::new(stdout);
+			for line in reader.lines() {
+				if let Ok(line) = line {
+					println!("{line}");
+				}
+			}
+		}
+	}
 }
 
 
@@ -514,7 +525,7 @@ fn main() {
 	println!("{:?}", pm);
 
 	match rockcmd {
-
+		"update"   | "u" => update_pkg(pm),
 		"search"   | "s" => {
 			let _ = display_pkg(pm, &pkgname);
 		},
