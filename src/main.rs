@@ -131,8 +131,18 @@ fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
 
-	let pkgmgr = detect_pkg_mgr(&pm, pkg, input_pkg_num);
+	// let pkgmgr = detect_pkg_mgr(&pm, pkg, input_pkg_num); -- don't query repos once again.
+	let mut pkgmgr = "";
+	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] {
+		pkgmgr = "pacman";
+	} else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] {
+		pkgmgr = "yay";
+	} else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] {
+		pkgmgr = "flatpak";
+	}
 	println!("{}", pkgmgr);
+	let xx: Vec<&str> = x.res.lines().collect();
+	println!("{}", xx[(input_pkg_num as usize) - 1]);
 }
 
 fn update_pkg(pm: &Pkgmgrs) {
@@ -335,7 +345,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	}
 	
 	// println!("{RED}{}{RESET}", res_string);
-	println!("{res_string}");
+	// println!("{res_string}");
 	println!("Pacman: {pacman_idx}, Yay: {yay_idx}, Flatpak: {flatpak_idx}");
 	PkgResult {
 		res: res_string,
