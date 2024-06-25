@@ -147,12 +147,20 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 		info_pkgmgr = "yay";
 	} else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] {
 		info_pkgmgr = "flatpak";
+	} else if input_pkg_num > x.pos[2] {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
 	}
 	// println!("{}", info_pkgmgr);
 	let tmp: Vec<&str> = x.res.lines().collect();
 	// println!("{}", xx[(input_pkg_num as usize) - 1]);
-	let info_pkgname = tmp[(input_pkg_num as usize) - 1];
-
+	let mut info_pkgname = "";
+	if input_pkg_num > 0 {
+		info_pkgname = tmp[(input_pkg_num as usize) - 1];
+	} else {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
+	}
 	let mut output = Command::new("echo").stdout(Stdio::piped()).spawn().expect("");
 	
 	if info_pkgmgr == "flatpak" {
@@ -306,11 +314,20 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 		inst_pkgmgr = "yay";
 	} else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] {
 		inst_pkgmgr = "flatpak";
+	} else if input_pkg_num > x.pos[2] {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
 	}
 	// println!("{}", inst_pkgmgr);
 	let tmp: Vec<&str> = x.res.lines().collect();
 	// println!("{}", xx[(input_pkg_num as usize) - 1]);
-	let info_pkgname = tmp[(input_pkg_num as usize) - 1];
+	let mut info_pkgname = "";
+	if input_pkg_num > 0 {
+		info_pkgname = tmp[(input_pkg_num as usize) - 1];
+	} else {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
+	}
 
 	let mut output = Command::new("echo").stdout(Stdio::piped()).spawn().expect("");
 	
