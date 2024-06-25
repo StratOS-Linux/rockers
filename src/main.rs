@@ -321,20 +321,28 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	// println!("{}", inst_pkgmgr);
 	let tmp: Vec<&str> = x.res.lines().collect();
 	// println!("{}", xx[(input_pkg_num as usize) - 1]);
-	let mut info_pkgname = "";
+	let mut inst_pkgname = "";
 	if input_pkg_num > 0 {
-		info_pkgname = tmp[(input_pkg_num as usize) - 1];
+		inst_pkgname = tmp[(input_pkg_num as usize) - 1];
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
 	}
 
-	let mut output = Command::new(&inst_pkgmgr)
-		.args(["-c", &format!("{} {}", &pm.install_cmd[inst_pkgmgr], info_pkgname)])
-		.stdout(Stdio::piped())
-		.spawn()
-		.expect("No such pkg");
-
+	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
+	if inst_pkgmgr == "pacman" || inst_pkgmgr == "apt" {
+		output = Command::new("sh")
+			.args(["-c", &format!("sudo {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname)])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	} else if inst_pkgmgr == "yay" || inst_pkgmgr == "flatpak" {
+		output = Command::new("sh")
+			.args(["-c", &format!("{} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname)])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
 	if let Some(stdout) = output.stdout.take() {
 		let reader = BufReader::new(stdout);
 		for line in reader.lines() {
@@ -345,31 +353,60 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	}
 }
 
-fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
-	if pkg==String::new() {
-		println!("{ITALIC}No matching packages installed.{RESET}");
-		return;
+fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
+	let x = display_local_pkg(&pm, pkg);
+	let mut input_pkg_str = String::new();
+	adjust_idx(x.pos[0], x.pos[1], x.pos[2]);
+	
+	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
+	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
+
+	// don't query repos once again.
+	let mut rm_pkgmgr = "";
+	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] {
+		rm_pkgmgr = "pacman";
+	} else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] {
+		rm_pkgmgr = "yay";
+	} else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] {
+		rm_pkgmgr = "flatpak";
+	} else if input_pkg_num > x.pos[2] {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
 	}
-	println!("\n{ITALIC}Removing packages matching '{}{RESET}'", pkg);
-    let mut child = Command::new("sh")
-        .args(["-c", &format!("sudo {} {} {}", pkgmgr, remove_cmd, pkg)])
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Failed to start command");
+	// println!("{}", rm_pkgmgr);
+	let tmp: Vec<&str> = x.res.lines().collect();
+	// println!("{}", xx[(input_pkg_num as usize) - 1]);
+	let mut rm_pkgname = "";
+	if input_pkg_num > 0 {
+		rm_pkgname = tmp[(input_pkg_num as usize) - 1];
+	} else {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
+	}
 
-    if let Some(stdout) = child.stdout.take() {
-        let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                println!("{}{RESET}", line);
-            }
-        }
-    }
+	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
+	if rm_pkgmgr == "pacman" || rm_pkgmgr == "apt" {
+		output = Command::new("sh")
+			.args(["-c", &format!("sudo {} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	} else if rm_pkgmgr == "yay" || rm_pkgmgr == "flatpak" {
+		output = Command::new("sh")
+			.args(["-c", &format!("{} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
 
-    let status = child.wait().expect("Failed to wait for command");
-    if !status.success() {
-        eprintln!("Command failed with exit code: {}", status);
-    }
+	if let Some(stdout) = output.stdout.take() {
+		let reader = BufReader::new(stdout);
+		for line in reader.lines() {
+			if let Ok(line) = line {
+				println!("{line}");
+			}
+		}
+	}
 }
 
 fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
@@ -519,7 +556,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 					}
 				}
 
-				else if pm.name[i]=="flatpak" {
+				else if pm.name[i]=="flatpak" && !line.contains("No matches found") {
 					println!("[{GREEN}{}{RESET}]: {}", index, line);
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
 					res_string += &line[..fwi];
@@ -754,6 +791,7 @@ fn main() {
 		"install-info"     | "iif"    => inst_info_pkg(&pm, &pkgname),
 		"info"             | "if"     => info_pkg(&pm, &pkgname),
 		"update"           | "u"      => update_pkg(&pm),
+		"remove"           | "r"      => remove_pkg(&pm, &pkgname),
 	 	"clean"            | "c"      => cleanup_pkg(&pm),
 		"-h"               | "--help" => banner(),
 		_                             => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information.")
