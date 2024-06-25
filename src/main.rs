@@ -314,30 +314,16 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 
 	let mut output = Command::new("echo").stdout(Stdio::piped()).spawn().expect("");
 	
-	if inst_pkgmgr == "pacman" {
+	if inst_pkgmgr == "pacman" || inst_pkgmgr == "apt" {
 		output = Command::new("sh")
-			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "--noconfirm")])
+			.args(["-c", &format!("sudo {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname)])
 			.stdout(Stdio::piped())
 			.spawn()
 			.expect("No such pkg");
 	}
-	else if inst_pkgmgr == "apt" {
+	else if inst_pkgmgr == "yay" || inst_pkgmgr == "flatpak" {
 		output = Command::new("sh")
-			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "-y")])
-			.stdout(Stdio::piped())
-			.spawn()
-			.expect("No such pkg");
-	}
-	else if inst_pkgmgr == "yay" {
-		output = Command::new("sh")
-			.args(["-c", &format!("{} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "--noconfirm")])
-			.stdout(Stdio::piped())
-			.spawn()
-			.expect("No such pkg");
-	}
-	else if inst_pkgmgr == "flatpak" {
-		output = Command::new("sh")
-			.args(["-c", &format!("{} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "--assumeyes")])
+			.args(["-c", &format!("{} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname)])
 			.stdout(Stdio::piped())
 			.spawn()
 			.expect("No such pkg");
@@ -763,9 +749,8 @@ fn main() {
 		"update"           | "u"      => update_pkg(&pm),
 	 	"clean"            | "c"      => cleanup_pkg(&pm),
 		"-h"               | "--help" => banner(),
-		_ => {
-			print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information.")
-		},
+		_                             => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information.")
+		,
 	}
 	// match rockcmd {
 	// 	"install" | "i" => {
