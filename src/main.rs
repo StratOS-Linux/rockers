@@ -118,13 +118,13 @@ fn adjust_idx(a: i32, b: i32, c: i32) {
 	if a==-1 && b==-1 && c==-1 { // no matches at all
 		println!("{ITALIC}No matching packages found.{RESET}");
 	} else if b==-1 && c==-1 { // only pacman / yay error 429 and no flatpak
-		println!("{ITALIC}Select package [1-{}]{RESET}", a);
+		println!("{ITALIC}Select package [1-{}]: {RESET}", a);
 	} else if b==-1 { // yay error 429 only / no AUR packages
-		println!("{ITALIC}Select package [1-{}]{RESET}", c);
+		println!("{ITALIC}Select package [1-{}]: {RESET}", c);
 	} else if c==-1 { // only pacman and AUR
-		println!("{ITALIC}Select package [1-{}]{RESET}", b);
+		println!("{ITALIC}Select package [1-{}]: {RESET}", b);
 	} else {
-		println!("{ITALIC}Select package [1-{}]{RESET}", c);
+		println!("{ITALIC}Select package [1-{}]: {RESET}", c);
 	}
 }
 
@@ -389,8 +389,8 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 					}
 				}
 
-				else if pm.name[i]=="flatpak" && line.contains(&pkg) {
-					println!("[{GREEN}{}{RESET}]: {}", index, line);
+				else if pm.name[i]=="flatpak" && line.to_ascii_lowercase().contains(&pkg) {
+					println!("[{GREEN}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{GREEN}{}{RESET}]{RESET}", index, line, &pm.name[i]);
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
 					res_string += &line[..fwi];
 					res_string += "\n";
