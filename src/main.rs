@@ -697,43 +697,6 @@ fn detect_pkg_mgr<'a>(pm: &'a Pkgmgrs, pkg: &'a str, pkgno: i32) -> &'a str {
 	}
 }
 
-fn search_local_pkg(pm: &Pkgmgrs, pkg: &str) -> SearchOutput {
-	let mut search_out = SearchOutput {
-		pkgmgr: String::from(""),
-		pkgname: String::from("")
-	};
-	
-	let mut input_pkg_no: String = String::new();
-	let mut index = 1;
-
-	let pkg_output = display_local_pkg(&pm, pkg);
-	
-	println!("{ITALIC}Select package [1-{}]: {RESET}", index-1);
-	io::stdin().read_line(&mut input_pkg_no).expect("Enter a valid integer.");
-	let input_pkg_num: i32 = input_pkg_no.trim().parse().expect("Cannot convert to integer.");
-
-	if index<=1 {
-		return search_out;
-	}
-
-	index=1;
-	for line in pkg_output.res.lines() {
-		let line = &line.replace("extra/", "");
-		if pm.name[0] == "pacman" {
-			if line.contains("[installed]") || !line.contains("   ") {
-				index += 1;
-				
-				if index==input_pkg_num+1 {
-					if let Some(pkg_name) = line.split_whitespace().next() {
-						search_out.pkgname = String::from(pkg_name);
-					}
-				}
-			}
- 		}
-	}
-	search_out
-}
-
 fn main() {
 	let args: Vec<String> = env::args().collect();
 	let mut rockcmd = "";
@@ -812,7 +775,7 @@ fn main() {
 	}
 
 	// println!("{RED}Pkg mgr: {}{RESET}", detect_pkg_mgr(pm.clone(), &pkgname, 16)); // 16 is to check if Flatpak's Emacs is correct.
-	println!("{:?}", pm);
+	// println!("{:?}", pm);
 
 	match rockcmd {
 		"install"          | "i"      => install_pkg(&pm, &pkgname),
