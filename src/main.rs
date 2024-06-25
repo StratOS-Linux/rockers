@@ -3,7 +3,7 @@
 use std::path::Path;
 use std::process::exit;
 use std::{env, process::{Command, Stdio}};
-use std::io::{self, BufReader, BufRead};
+use std::io::{self, stdout, Write, BufRead, BufReader};
 use std::collections::HashMap;
 
 // const BLACK: &str = "\x1B[30m";
@@ -117,16 +117,20 @@ fn installed_sources() -> Vec<&'static str> {
 
 fn adjust_idx(a: i32, b: i32, c: i32) {
 	if a==-1 && b==-1 && c==-1 { // no matches at all
-		println!("{ITALIC}No matching packages found.{RESET}");
+		print!("{ITALIC}No matching packages found.{RESET}");
 		exit(-1);
 	} else if b==-1 && c==-1 { // only pacman / yay error 429 and no flatpak
-		println!("{ITALIC}Select package [1-{}]: {RESET}", a);
+		print!("{ITALIC}Select package [1-{}]: {RESET}", a);
+		io::stdout().flush();
 	} else if b==-1 { // yay error 429 only / no AUR packages
-		println!("{ITALIC}Select package [1-{}]: {RESET}", c);
+		print!("{ITALIC}Select package [1-{}]: {RESET}", c);
+		io::stdout().flush();
 	} else if c==-1 { // only pacman and AUR
-		println!("{ITALIC}Select package [1-{}]: {RESET}", b);
+		print!("{ITALIC}Select package [1-{}]: {RESET}", b);
+		io::stdout().flush();
 	} else {
-		println!("{ITALIC}Select package [1-{}]: {RESET}", c);
+		print!("{ITALIC}Select package [1-{}]: {RESET}", c);
+		io::stdout().flush();
 	}
 }
 
@@ -157,6 +161,7 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let mut info_pkgname = "";
 	if input_pkg_num > 0 {
 		info_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!();
 		println!("{ITALIC}Info for package {RESET}{HIGHLIGHT}{}{RESET}.", info_pkgname);
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
@@ -214,6 +219,7 @@ fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let mut info_pkgname = "";
 	if input_pkg_num > 0 {
 		info_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!();
 		println!("{ITALIC}Fetching info for package {RESET}{HIGHLIGHT}{}{RESET}.", info_pkgname);
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
@@ -351,6 +357,7 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let mut inst_pkgname = "";
 	if input_pkg_num > 0 {
 		inst_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!();
 		println!("{ITALIC}Installing package {RESET}{HIGHLIGHT}{}{RESET}.", inst_pkgname);
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
@@ -407,6 +414,7 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let mut rm_pkgname = "";
 	if input_pkg_num > 0 {
 		rm_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!();
 		println!("{ITALIC}Removing package {RESET}{HIGHLIGHT}{}{RESET}.", rm_pkgname);
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
@@ -505,12 +513,13 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	
 	// println!("{RED}{}{RESET}", res_string);
 	// println!("{res_string}");
-	println!("Pacman: {pacman_idx}, Yay: {yay_idx}, Flatpak: {flatpak_idx}");
+	// println!("Pacman: {pacman_idx}, Yay: {yay_idx}, Flatpak: {flatpak_idx}");
 	PkgResult {
 		res: res_string,
 		pos: vec![pacman_idx, yay_idx, flatpak_idx],
 	}
 }
+
 fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
