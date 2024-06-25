@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused)]
 use std::path::Path;
+use std::process::exit;
 use std::{env, process::{Command, Stdio}};
 use std::io::{self, BufReader, BufRead};
 use std::collections::HashMap;
@@ -117,6 +118,7 @@ fn installed_sources() -> Vec<&'static str> {
 fn adjust_idx(a: i32, b: i32, c: i32) {
 	if a==-1 && b==-1 && c==-1 { // no matches at all
 		println!("{ITALIC}No matching packages found.{RESET}");
+		exit(-1);
 	} else if b==-1 && c==-1 { // only pacman / yay error 429 and no flatpak
 		println!("{ITALIC}Select package [1-{}]: {RESET}", a);
 	} else if b==-1 { // yay error 429 only / no AUR packages
@@ -337,7 +339,7 @@ fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
 }
 
 fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
-	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
+	println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
 	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
 	let mut result = String::new();
@@ -410,7 +412,7 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	}
 }
 fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
-	println!("\n{ITALIC}Found packages matching '{}{RESET}':", pkg);
+	println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
 	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
 	let mut result = String::new();
@@ -714,8 +716,8 @@ fn main() {
 
 	match rockcmd {
 		"search"           | "s"      => { let _ = display_pkg(&pm, &pkgname); },
-		"install-info"     | "II"     => inst_info_pkg(&pm, &pkgname),
-		"info"             | "I"      => info_pkg(&pm, &pkgname),
+		"install-info"     | "iif"     => inst_info_pkg(&pm, &pkgname),
+		"info"             | "if"      => info_pkg(&pm, &pkgname),
 		"update"           | "u"      => update_pkg(&pm),
 	 	"clean"            | "c"      => cleanup_pkg(&pm),
 		"-h"               | "--help" => banner(),
