@@ -289,26 +289,67 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 	}
 }
 
-fn install_pkg(pkgmgr: &str, inst_cmd: &str, pkg: &str) {
-    let mut child = Command::new("sh")
-        .args(["-c", &format!("sudo {} {} {}", pkgmgr, inst_cmd, pkg)])
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Failed to start command");
 
-    if let Some(stdout) = child.stdout.take() {
-        let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                println!("{}{RESET}", line);
-            }
-        }
-    }
+fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
+	let x = display_pkg(&pm, pkg);
+	let mut input_pkg_str = String::new();
+	adjust_idx(x.pos[0], x.pos[1], x.pos[2]);
+	
+	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
+	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
 
-    let status = child.wait().expect("Failed to wait for command");
-    if !status.success() {
-        eprintln!("Command failed with exit code: {}", status);
-    }
+	// don't query repos once again.
+	let mut inst_pkgmgr = "";
+	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] {
+		inst_pkgmgr = "pacman";
+	} else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] {
+		inst_pkgmgr = "yay";
+	} else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] {
+		inst_pkgmgr = "flatpak";
+	}
+	// println!("{}", inst_pkgmgr);
+	let tmp: Vec<&str> = x.res.lines().collect();
+	// println!("{}", xx[(input_pkg_num as usize) - 1]);
+	let info_pkgname = tmp[(input_pkg_num as usize) - 1];
+
+	let mut output = Command::new("echo").stdout(Stdio::piped()).spawn().expect("");
+	
+	if inst_pkgmgr == "pacman" {
+		output = Command::new("sh")
+			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "--noconfirm")])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
+	else if inst_pkgmgr == "apt" {
+		output = Command::new("sh")
+			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "-y")])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
+	else if inst_pkgmgr == "yay" {
+		output = Command::new("sh")
+			.args(["-c", &format!("{} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "--noconfirm")])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
+	else if inst_pkgmgr == "flatpak" {
+		output = Command::new("sh")
+			.args(["-c", &format!("{} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname, "--assumeyes")])
+			.stdout(Stdio::piped())
+			.spawn()
+			.expect("No such pkg");
+	}
+	if let Some(stdout) = output.stdout.take() {
+		let reader = BufReader::new(stdout);
+		for line in reader.lines() {
+			if let Ok(line) = line {
+				println!("{line}");
+			}
+		}
+	}
 }
 
 fn remove_pkg(pkgmgr: &str, remove_cmd: &str, pkg: &str) {
@@ -715,9 +756,10 @@ fn main() {
 	println!("{:?}", pm);
 
 	match rockcmd {
+		"install"          | "i"      => install_pkg(&pm, &pkgname),
 		"search"           | "s"      => { let _ = display_pkg(&pm, &pkgname); },
-		"install-info"     | "iif"     => inst_info_pkg(&pm, &pkgname),
-		"info"             | "if"      => info_pkg(&pm, &pkgname),
+		"install-info"     | "iif"    => inst_info_pkg(&pm, &pkgname),
+		"info"             | "if"     => info_pkg(&pm, &pkgname),
 		"update"           | "u"      => update_pkg(&pm),
 	 	"clean"            | "c"      => cleanup_pkg(&pm),
 		"-h"               | "--help" => banner(),
