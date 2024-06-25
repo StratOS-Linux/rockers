@@ -329,22 +329,12 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 		exit(-1);
 	}
 
-	let mut output = Command::new("echo").stdout(Stdio::piped()).spawn().expect("");
-	
-	if inst_pkgmgr == "pacman" || inst_pkgmgr == "apt" {
-		output = Command::new("sh")
-			.args(["-c", &format!("sudo {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname)])
-			.stdout(Stdio::piped())
-			.spawn()
-			.expect("No such pkg");
-	}
-	else if inst_pkgmgr == "yay" || inst_pkgmgr == "flatpak" {
-		output = Command::new("sh")
-			.args(["-c", &format!("{} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], info_pkgname)])
-			.stdout(Stdio::piped())
-			.spawn()
-			.expect("No such pkg");
-	}
+	let mut output = Command::new(&inst_pkgmgr)
+		.args(["-c", &format!("{} {}", &pm.install_cmd[inst_pkgmgr], info_pkgname)])
+		.stdout(Stdio::piped())
+		.spawn()
+		.expect("No such pkg");
+
 	if let Some(stdout) = output.stdout.take() {
 		let reader = BufReader::new(stdout);
 		for line in reader.lines() {
