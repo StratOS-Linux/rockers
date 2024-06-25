@@ -157,6 +157,7 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let mut info_pkgname = "";
 	if input_pkg_num > 0 {
 		info_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!("{ITALIC}Info for package {RESET}{HIGHLIGHT}{}{RESET}.", info_pkgname);
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
@@ -186,14 +187,16 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 		}
 	}
 }
+
 fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
-	println!("{ITALIC}Select package [1-{}]: {RESET}", x.pos[2]);
+	
+	adjust_idx(x.pos[0], x.pos[1], x.pos[2]);
+	
 	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
 
-	// don't query repos once again.
 	let mut info_pkgmgr = "";
 	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] {
 		info_pkgmgr = "pacman";
@@ -201,17 +204,26 @@ fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 		info_pkgmgr = "yay";
 	} else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] {
 		info_pkgmgr = "flatpak";
+	} else if input_pkg_num > x.pos[2] {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
 	}
 	// println!("{}", info_pkgmgr);
 	let tmp: Vec<&str> = x.res.lines().collect();
 	// println!("{}", xx[(input_pkg_num as usize) - 1]);
-	let info_pkgname = tmp[(input_pkg_num as usize) - 1];
-
+	let mut info_pkgname = "";
+	if input_pkg_num > 0 {
+		info_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!("{ITALIC}Fetching info for package {RESET}{HIGHLIGHT}{}{RESET}.", info_pkgname);
+	} else {
+		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
+		exit(-1);
+	}
 	let mut output = Command::new("echo").stdout(Stdio::piped()).spawn().expect("");
 	
 	if info_pkgmgr == "flatpak" {
 		output = Command::new(&info_pkgmgr)
-			.args([&pm.info_cmd[info_pkgmgr], "flathub", info_pkgname])
+			.args([&pm.info_cmd[info_pkgmgr], info_pkgname])
 			.stdout(Stdio::piped())
 			.spawn()
 			.expect("No such pkg");
@@ -284,16 +296,31 @@ fn update_pkg(pm: &Pkgmgrs) {
 
 
 fn cleanup_pkg(pm: &Pkgmgrs) {
-	println!("\n{ITALIC}Removing unused packages.{RESET}");
-	println!("{} {}", pm.name[0], pm.cleanup_cmd[&pm.name[0]]);
-	let output = Command::new("sh")
-		.args(["-c", &format!("sudo {} {}", &pm.name[0], pm.cleanup_cmd[&pm.name[0]])])
-		.stdout(Stdio::piped())
-		.output()
-		.unwrap();
-	let result = String::from_utf8(output.stdout).unwrap();
-	for line in result.lines() {
-		println!("{line}{RESET}");
+	println!("{ITALIC}Finding unused packages.{RESET}");
+	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
+	for i in 0..pm.name.len() {
+		if pm.name[i] == "pacman" || pm.name[i] == "apt" {
+			output = Command::new("sh")
+				.args(["-c", &format!("sudo {} {} 2&>/dev/null", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]])])
+				.stdout(Stdio::piped())
+				.spawn()
+				.expect("No such pkg");
+		} else if pm.name[i] == "flatpak" { // no need to check for yay.
+			output = Command::new("sh")
+				.args(["-c", &format!("{} {} 2&>/dev/null", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]]), "--unused"])
+				.stdout(Stdio::piped())
+				.spawn()
+				.expect("No such pkg");
+		}
+	}
+	
+	if let Some(stdout) = output.stdout.take() {
+		let reader = BufReader::new(stdout);
+		for line in reader.lines() {
+			if let Ok(line) = line {
+				println!("{line}");
+			}
+		}
 	}
 }
 
@@ -324,6 +351,7 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let mut inst_pkgname = "";
 	if input_pkg_num > 0 {
 		inst_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!("{ITALIC}Installing package {RESET}{HIGHLIGHT}{}{RESET}.", inst_pkgname);
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
@@ -379,6 +407,7 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let mut rm_pkgname = "";
 	if input_pkg_num > 0 {
 		rm_pkgname = tmp[(input_pkg_num as usize) - 1];
+		println!("{ITALIC}Removing package {RESET}{HIGHLIGHT}{}{RESET}.", rm_pkgname);
 	} else {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
