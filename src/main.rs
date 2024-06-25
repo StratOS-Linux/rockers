@@ -370,7 +370,7 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 				let line = &line.unwrap().replace("local/", "");
 				if pm.name[i] == "pacman" && !line.contains("    ") {
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
+					println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
 					// res_string += &(line.to_owned() + &String::from('\n'));
 					res_string += &line[..fwi];
 					res_string += "\n";
@@ -379,12 +379,14 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 				}
 
 				else if pm.name[i] == "yay" && !line.contains("    ") {
-					println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					res_string += &line[..fwi];
-					res_string += "\n";
-					yay_idx = index;
-					index += 1;
+					if !res_string.contains(&line[..fwi]) {
+						println!("[{VIOLET}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
+						res_string += &line[..fwi];
+						res_string += "\n";
+						yay_idx = index;
+						index += 1;
+					}
 				}
 
 				else if pm.name[i]=="flatpak" && line.contains(&pkg) {
