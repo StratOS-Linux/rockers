@@ -713,14 +713,12 @@ fn main() {
 	println!("{:?}", pm);
 
 	match rockcmd {
-		"search"   | "s" => {
-			let _ = display_pkg(&pm, &pkgname);
-		},
-		"install-info"     | "II" => inst_info_pkg(&pm, &pkgname),
-		"info"     | "I" => info_pkg(&pm, &pkgname),
-		"update"   | "u" => update_pkg(&pm),
-	 	"clean"    | "c" => cleanup_pkg(&pm),
-		"-h"  | "--help" => banner(),
+		"search"           | "s"      => { let _ = display_pkg(&pm, &pkgname); },
+		"install-info"     | "II"     => inst_info_pkg(&pm, &pkgname),
+		"info"             | "I"      => info_pkg(&pm, &pkgname),
+		"update"           | "u"      => update_pkg(&pm),
+	 	"clean"            | "c"      => cleanup_pkg(&pm),
+		"-h"               | "--help" => banner(),
 		_ => {
 			print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information.")
 		},
