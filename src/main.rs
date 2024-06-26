@@ -245,12 +245,12 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 	for i in 0..pm.name.len() {
 		if pm.name[i] == "pacman" || pm.name[i] == "apt" {
 			output = Command::new("sh")
-				.args(["-c", &format!("sudo {} {} 2&>/dev/null", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]])])
+				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]])])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 		}
 		else if pm.name[i] == "flatpak" { // no need to check for yay.
 			output = Command::new("sh")
-				.args(["-c", &format!("{} {} 2&>/dev/null", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]]), "--unused"])
+				.args(["-c", &format!("{} {} ", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]]), "--unused"])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 		}
 	}
@@ -259,7 +259,9 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 		let reader = BufReader::new(stdout);
 		for line in reader.lines() {
 			if let Ok(line) = line {
-				println!("{line}");
+				if !line.contains("Nothing unused to uninstall") {
+					println!("{line}");
+				}
 			}
 		}
 	}
