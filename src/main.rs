@@ -240,13 +240,44 @@ fn update_pkg(pm: &Pkgmgrs) {
 }
 
 fn cleanup_pkg(pm: &Pkgmgrs) {
-	println!("{ITALIC}Finding unused packages.{RESET}");
+	println!("{ITALIC}Finding unused packages:{RESET}");
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	for i in 0..pm.name.len() {
-		if pm.name[i] == "pacman" || pm.name[i] == "apt" {
+		if pm.name[i] == "apt" {
 			output = Command::new("sh")
 				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]])])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
+		}
+		else if pm.name[i] == "pacman" {
+			let mut unused_pkgs: Vec<String> = Vec::new();
+			let mut unused_pkgs_str = String::new();
+			let mut output1 = Command::new(&pm.name[i]).arg("-Qtdq").stdout(Stdio::piped()).spawn().expect("");
+
+			if let Some(stdout) = output1.stdout.take() {
+				let reader = BufReader::new(stdout);
+				for line in reader.lines() {
+					let tmp = line.unwrap();
+					unused_pkgs.push(tmp);
+				}
+				for i in 0..unused_pkgs.len() {
+					unused_pkgs_str += &unused_pkgs[i];
+					unused_pkgs_str += " ";
+				}
+			}
+
+			_ = Command::new("sh").args(["-c", &format!("sudo rm -f /var/lib/pacman/db.lck")]).spawn();
+			output = Command::new("sh").args(["-c", &format!("sudo {} {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], unused_pkgs_str)])
+				.stdout(Stdio::piped()).spawn().expect("No such pkg");
+			if let Some(stdout) = output.stdout.take() {
+				let reader = BufReader::new(stdout);
+				for line in reader.lines() {
+					if let Ok(line) = line {
+						if !line.contains("Nothing unused to uninstall") {
+							println!("{line}");
+						}
+					}
+				}
+			}
 		}
 		else if pm.name[i] == "flatpak" { // no need to check for yay.
 			output = Command::new("sh")
@@ -527,7 +558,7 @@ fn main() {
 		pm.inst_info_cmd.insert(pm.name[0].clone(), "-Qi".to_string());
 		pm.update_cmd.insert(pm.name[0].clone(), "-Syu".to_string());
 		pm.remove_cmd.insert(pm.name[0].clone(), "-Rns".to_string());
-		pm.cleanup_cmd.insert(pm.name[0].clone(), "-Rcns $(pacman -Qtdq) --noconfirm".to_string());
+		pm.cleanup_cmd.insert(pm.name[0].clone(), "-Rcns".to_string());
 	}
 	
 	if pkgmgr_found("yay") {
@@ -540,7 +571,7 @@ fn main() {
 		pm.inst_info_cmd.insert(pm.name[1].clone(), "-Qi".to_string());
 		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
 		pm.remove_cmd.insert(pm.name[1].clone(), "-Rns".to_string());
-		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns $(yay -Qtdq)".to_string());
+		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns".to_string());
 	}
 	
 	if pkgmgr_found("flatpak") {
