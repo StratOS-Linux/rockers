@@ -524,9 +524,9 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
  				}
 
 				else if pm.name[i] == "yay" {
-					if line.contains("(Installed)") {
+					if line.contains("(Installed") {
 						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, &line[..fwi].replace("(Installed)", ""), "yay");
+						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, &line[..fwi].replace("(Installed", ""), "yay");
 						res_string += &line[..fwi];
 						res_string += "\n";
 						yay_idx = index as i32;
