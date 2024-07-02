@@ -416,7 +416,7 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 				let line = &line.unwrap().replace("local/", "");
 				if pm.name[i] == "pacman" && !line.contains("    ") {
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, &line[..fwi].replace("[installed]", ""), "pacman");
+					println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
 					res_string += &line[..fwi];
 					res_string += "\n";
 					pacman_idx = index;
@@ -426,7 +426,7 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 				else if pm.name[i] == "yay" && !line.contains("    ") {
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
 					if !res_string.contains(&line[..fwi]) {
-						println!("[{VIOLET}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, &line[..fwi].replace("(Installed)", ""), "yay");
+						println!("[{VIOLET}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
 						res_string += &line[..fwi];
 						res_string += "\n";
 						yay_idx = index;
@@ -470,6 +470,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 		}
 		if let Some(stdout) = output.stdout.take() {
 			let reader = BufReader::new(stdout);
+                        let mut nala_vec: Vec<String> = Vec::new();
 			for line in reader.lines() {
 				let line = &line.unwrap().replace("extra/", "").replace("aur/", "").replace("core/", "");
 				if pm.name[i] == "pacman" {
@@ -478,7 +479,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, &line[..fwi].replace("[installed]", ""), "pacman");
 						res_string += &line[..fwi];
 						res_string += "\n";
-						pacman_idx = index;
+						pacman_idx = index as i32;
 						index += 1;
 					}
 					else if !line.contains("    ") {
@@ -486,7 +487,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 						println!("[{BLUE}{}{RESET}]: {}", index, &line[..fwi]);
 						res_string += &line[..fwi];
 						res_string += "\n";
-						pacman_idx = index;
+						pacman_idx = index as i32;
 						index += 1;
 					}
  				}
@@ -497,7 +498,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, &line[..fwi].replace("(Installed)", ""), "yay");
 						res_string += &line[..fwi];
 						res_string += "\n";
-						yay_idx = index;
+						yay_idx = index as i32;
 						index += 1;
 					}
 					else if !line.contains("    ") {
@@ -505,7 +506,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 						println!("[{VIOLET}{}{RESET}]: {}", index, &line[..fwi]);
 						res_string += &line[..fwi];
 						res_string += "\n";
-						yay_idx = index;
+						yay_idx = index as i32;
 						index += 1;
 					}
 				}
@@ -515,10 +516,37 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
 					res_string += &line[..fwi];
 					res_string += "\n";
-					flatpak_idx = index;
+					flatpak_idx = index as i32;
 					index += 1;
 				}
+
+                                else if pm.name[i] == "nala" {
+                                    if line.contains("[Ubuntu") {
+                                        let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+                                        let tmp = &line[..fwi];
+                                        nala_vec.push(tmp.to_string());
+                                        // println!("[{YELLOW}{}{RESET}]: {}", index, tmp);
+                                        res_string += &line[..fwi];
+                                        res_string += "\n";
+                                        // index += 1;
+                                    }
+                                    else if line.contains("├── is installed") {
+                                        // println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]{RESET}", index, &nala_vec[nala_vec.len() - 1], "nala");
+                                        let mut x = nala_vec.pop().unwrap();
+                                        x += " INSTALLED";
+                                        nala_vec.push(x);
+                                    }
+
+                                }
 			}
+
+                        for i in 0..nala_vec.len() {
+                            if nala_vec[i].contains("INSTALLED") {
+                                println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]", index+i, &nala_vec[i].replace(" INSTALLED", ""), "nala");
+                            } else {
+                                println!("[{YELLOW}{}{RESET}]: {}", index + i, &nala_vec[i]);
+                            }
+                        }
 		}
 	}
 	
@@ -589,14 +617,14 @@ fn main() {
 	if pkgmgr_found("/bedrock/cross/bin/nala") {
 		println!(" - {YELLOW}Apt{RESET}");
 		pm.name.push("nala".to_string());
-		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
-		pm.search_cmd.insert(pm.name[2].clone(), "list".to_string());
-		pm.search_local_cmd.insert(pm.name[2].clone(), "list".to_string());
-		pm.info_cmd.insert(pm.name[2].clone(), "show".to_string());
-		pm.inst_info_cmd.insert(pm.name[2].clone(), "show".to_string());
-		pm.update_cmd.insert(pm.name[2].clone(), "update".to_string());
-		pm.remove_cmd.insert(pm.name[2].clone(), "remove".to_string());
-		pm.cleanup_cmd.insert(pm.name[2].clone(), "autopurge".to_string());
+		pm.install_cmd.insert(pm.name[3].clone(), "install".to_string());
+		pm.search_cmd.insert(pm.name[3].clone(), "search".to_string());
+		pm.search_local_cmd.insert(pm.name[3].clone(), "list".to_string());
+		pm.info_cmd.insert(pm.name[3].clone(), "show".to_string());
+		pm.inst_info_cmd.insert(pm.name[3].clone(), "info".to_string());
+		pm.update_cmd.insert(pm.name[3].clone(), "update".to_string());
+		pm.remove_cmd.insert(pm.name[3].clone(), "uninstall".to_string());
+		pm.cleanup_cmd.insert(pm.name[3].clone(), "uninstall --unused".to_string());
 	}
 	match rockcmd {
 		"install"          | "i"      => install_pkg(&pm, &pkgname),
@@ -607,7 +635,6 @@ fn main() {
 		"remove"           | "r"      => remove_pkg(&pm, &pkgname),
 	 	"clean"            | "c"      => cleanup_pkg(&pm),
 		"-h"               | "--help" => banner(),
-		_                             => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information.")
-		,
+		_                             => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information."),
 	}
 }
