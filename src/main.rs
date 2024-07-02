@@ -94,8 +94,7 @@ Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com> for Strat
 }
 
 fn pkgmgr_found(p: &str) -> bool {
-	let new_p = String::from("/usr/bin/") + p;
-	if Path::new(new_p.as_str()).is_file() { return true; }
+	if Path::new(p).is_file() { return true; }
 	false
 }
 
@@ -417,7 +416,7 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 				let line = &line.unwrap().replace("local/", "");
 				if pm.name[i] == "pacman" && !line.contains("    ") {
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
+					println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, &line[..fwi].replace("[installed]", ""), "pacman");
 					res_string += &line[..fwi];
 					res_string += "\n";
 					pacman_idx = index;
@@ -427,7 +426,7 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 				else if pm.name[i] == "yay" && !line.contains("    ") {
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
 					if !res_string.contains(&line[..fwi]) {
-						println!("[{VIOLET}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
+						println!("[{VIOLET}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, &line[..fwi].replace("(Installed)", ""), "yay");
 						res_string += &line[..fwi];
 						res_string += "\n";
 						yay_idx = index;
@@ -476,7 +475,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 				if pm.name[i] == "pacman" {
 					if line.contains("[installed]") {
 						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
+						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, &line[..fwi].replace("[installed]", ""), "pacman");
 						res_string += &line[..fwi];
 						res_string += "\n";
 						pacman_idx = index;
@@ -484,7 +483,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 					}
 					else if !line.contains("    ") {
 						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-						println!("[{BLUE}{}{RESET}]: {}", index, line);
+						println!("[{BLUE}{}{RESET}]: {}", index, &line[..fwi]);
 						res_string += &line[..fwi];
 						res_string += "\n";
 						pacman_idx = index;
@@ -494,16 +493,16 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 
 				else if pm.name[i] == "yay" {
 					if line.contains("(Installed)") {
-						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
 						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+						println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, &line[..fwi].replace("(Installed)", ""), "yay");
 						res_string += &line[..fwi];
 						res_string += "\n";
 						yay_idx = index;
 						index += 1;
 					}
 					else if !line.contains("    ") {
-						println!("[{VIOLET}{}{RESET}]: {}", index, line);
 						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+						println!("[{VIOLET}{}{RESET}]: {}", index, &line[..fwi]);
 						res_string += &line[..fwi];
 						res_string += "\n";
 						yay_idx = index;
@@ -548,7 +547,7 @@ fn main() {
 		cleanup_cmd: HashMap::new()
 	};
 	
-	if pkgmgr_found("pacman") {
+	if pkgmgr_found("/usr/bin/pacman") {
 		println!(" - {BLUE}Pacman{RESET}");
 		pm.name.push("pacman".to_string());
 		pm.install_cmd.insert(pm.name[0].clone(), "-S".to_string());
@@ -561,7 +560,7 @@ fn main() {
 		pm.cleanup_cmd.insert(pm.name[0].clone(), "-Rcns".to_string());
 	}
 	
-	if pkgmgr_found("yay") {
+	if pkgmgr_found("/usr/bin/yay") {
 		println!(" - {VIOLET}Yay{RESET}");
 		pm.name.push("yay".to_string());
 		pm.install_cmd.insert(pm.name[1].clone(), "-Sa".to_string());
@@ -574,7 +573,7 @@ fn main() {
 		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns".to_string());
 	}
 	
-	if pkgmgr_found("flatpak") {
+	if pkgmgr_found("/usr/bin/flatpak") {
 		println!(" - {GREEN}Flatpak{RESET}");
 		pm.name.push("flatpak".to_string());
 		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
@@ -587,6 +586,18 @@ fn main() {
 		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall --unused".to_string());
 	}
 
+	if pkgmgr_found("/bedrock/cross/bin/nala") {
+		println!(" - {YELLOW}Apt{RESET}");
+		pm.name.push("nala".to_string());
+		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
+		pm.search_cmd.insert(pm.name[2].clone(), "list".to_string());
+		pm.search_local_cmd.insert(pm.name[2].clone(), "list".to_string());
+		pm.info_cmd.insert(pm.name[2].clone(), "show".to_string());
+		pm.inst_info_cmd.insert(pm.name[2].clone(), "show".to_string());
+		pm.update_cmd.insert(pm.name[2].clone(), "update".to_string());
+		pm.remove_cmd.insert(pm.name[2].clone(), "remove".to_string());
+		pm.cleanup_cmd.insert(pm.name[2].clone(), "autopurge".to_string());
+	}
 	match rockcmd {
 		"install"          | "i"      => install_pkg(&pm, &pkgname),
 		"search"           | "s"      => { let _ = display_pkg(&pm, &pkgname); },
