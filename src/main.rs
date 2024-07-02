@@ -98,21 +98,21 @@ fn pkgmgr_found(p: &str) -> bool {
 	false
 }
 
-fn adjust_idx(a: i32, b: i32, c: i32) {
-	if a==-1 && b==-1 && c==-1 { // no matches at all
+fn adjust_idx(a: i32, b: i32, c: i32, d: i32) {
+	if a==-1 && b==-1 && c==-1 && d==-1 { // no matches at all
 		print!("{ITALIC}No matching packages found.{RESET}");
 		exit(-1);
-	} else if b==-1 && c==-1 { // only pacman / yay error 429 and no flatpak
+	} else if b==-1 && c==-1 && d==-1 { // only pacman / yay error 429 and no flatpak
 		print!("{ITALIC}Select package [1-{}]: {RESET}", a);
 		let _ = io::stdout().flush();
-	} else if b==-1 { // yay error 429 only / no AUR packages
-		print!("{ITALIC}Select package [1-{}]: {RESET}", c);
-		let _ = io::stdout().flush();
-	} else if c==-1 { // only pacman and AUR
+	} else if c==-1 && d==-1{ // yay error 429 only / no AUR packages
 		print!("{ITALIC}Select package [1-{}]: {RESET}", b);
 		let _ = io::stdout().flush();
+        } else if d==-1 {
+                print!("{ITALIC}Select package [1-{}]: {RESET}", c);
+                let _ = io::stdout().flush();
 	} else {
-		print!("{ITALIC}Select package [1-{}]: {RESET}", c);
+		print!("{ITALIC}Select package [1-{}]: {RESET}", d);
 		let _ = io::stdout().flush();
 	}
 }
@@ -121,7 +121,7 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_local_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
 	
-	adjust_idx(x.pos[0], x.pos[1], x.pos[2]);
+	adjust_idx(x.pos[0], x.pos[1], x.pos[2], x.pos[3]);
 	
 	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
@@ -130,7 +130,8 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] { info_pkgmgr = "pacman"; }
 	else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] { info_pkgmgr = "yay"; }
 	else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] { info_pkgmgr = "flatpak"; }
-	else if input_pkg_num > x.pos[2] {
+	else if x.pos[2] < input_pkg_num && input_pkg_num <= x.pos[3] { info_pkgmgr = "nala"; }
+	else if input_pkg_num > x.pos[3] {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
 	}
@@ -162,9 +163,10 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 
 fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_pkg(&pm, pkg);
+        println!("{}", x.res);
 	let mut input_pkg_str = String::new();
 	
-	adjust_idx(x.pos[0], x.pos[1], x.pos[2]);
+	adjust_idx(x.pos[0], x.pos[1], x.pos[2], x.pos[3]);
 	
 	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
@@ -173,7 +175,8 @@ fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] { info_pkgmgr = "pacman"; }
 	else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] { info_pkgmgr = "yay"; }
 	else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] { info_pkgmgr = "flatpak"; }
-	else if input_pkg_num > x.pos[2] {
+        else if x.pos[2] < input_pkg_num && input_pkg_num <= x.pos[3] { info_pkgmgr = "nala"; }
+	else if input_pkg_num > x.pos[3] {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
 	}
@@ -214,7 +217,7 @@ fn update_pkg(pm: &Pkgmgrs) {
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	
 	for i in 0..pm.name.len() {
-		if pm.name[i] == "pacman" || pm.name[i] == "apt" { // run with sudo.
+		if pm.name[i] == "pacman" || pm.name[i] == "nala" { // run with sudo.
 			output = Command::new("sh").args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]])])
 				.stdout(Stdio::piped()).spawn().expect("Failed to start command");
 		}
@@ -242,7 +245,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 	println!("{ITALIC}Finding unused packages:{RESET}");
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	for i in 0..pm.name.len() {
-		if pm.name[i] == "apt" {
+		if pm.name[i] == "nala" {
 			output = Command::new("sh")
 				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]])])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
@@ -271,8 +274,8 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 				let reader = BufReader::new(stdout);
 				for line in reader.lines() {
 					if let Ok(line) = line {
-						if !line.contains("Nothing unused to uninstall") {
-							println!("{line}");
+						if !line.contains("no targets specified") {
+							 println!("{line}");
 						}
 					}
 				}
@@ -280,7 +283,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 		}
 		else if pm.name[i] == "flatpak" { // no need to check for yay.
 			output = Command::new("sh")
-				.args(["-c", &format!("{} {} ", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]]), "--unused"])
+				.args(["-c", &format!("{} {} {} ", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], "--unused")])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 		}
 	}
@@ -289,7 +292,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 		let reader = BufReader::new(stdout);
 		for line in reader.lines() {
 			if let Ok(line) = line {
-				if !line.contains("Nothing unused to uninstall") {
+				if !(line.contains("Nothing unused to uninstall") || line.contains("no targets specified") || line.contains("Nothing for Nala to remove")) {
 					println!("{line}");
 				}
 			}
@@ -301,7 +304,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
-	adjust_idx(x.pos[0], x.pos[1], x.pos[2]);
+	adjust_idx(x.pos[0], x.pos[1], x.pos[2], x.pos[3]);
 	
 	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
@@ -311,7 +314,8 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] { inst_pkgmgr = "pacman"; }
 	else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] { inst_pkgmgr = "yay"; }
 	else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] { inst_pkgmgr = "flatpak"; }
-	else if input_pkg_num > x.pos[2] {
+	else if x.pos[2] < input_pkg_num && input_pkg_num <= x.pos[3] { inst_pkgmgr = "nala"; }
+	else if input_pkg_num > x.pos[3] {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
 	}
@@ -327,9 +331,14 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	}
 
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
-	if inst_pkgmgr == "pacman" || inst_pkgmgr == "apt" {
+	if inst_pkgmgr == "pacman" {
 		output = Command::new("sh")
 			.args(["-c", &format!("sudo {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname)])
+			.stdout(Stdio::piped()).spawn().expect("No such pkg");
+	}
+	else if inst_pkgmgr == "nala" {
+		output = Command::new("sh")
+			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, "--assume-yes")])
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if inst_pkgmgr == "yay" || inst_pkgmgr == "flatpak" {
@@ -350,7 +359,7 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_local_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
-	adjust_idx(x.pos[0], x.pos[1], x.pos[2]);
+	adjust_idx(x.pos[0], x.pos[1], x.pos[2], x.pos[3]);
 	
 	io::stdin().read_line(&mut input_pkg_str).expect("Enter a valid integer.");
 	let input_pkg_num: i32 = input_pkg_str.trim().parse().expect("Cannot convert to integer.");
@@ -359,7 +368,8 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] { rm_pkgmgr = "pacman"; }
 	else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] { rm_pkgmgr = "yay"; }
 	else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] { rm_pkgmgr = "flatpak"; }
-	else if input_pkg_num > x.pos[2] {
+	else if x.pos[2] < input_pkg_num && input_pkg_num <= x.pos[3] { rm_pkgmgr = "nala"; }
+	else if input_pkg_num > x.pos[3] {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
 	}
@@ -375,8 +385,12 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 	}
 
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
-	if rm_pkgmgr == "pacman" || rm_pkgmgr == "apt" {
+	if rm_pkgmgr == "pacman" {
 		output = Command::new("sh").args(["-c", &format!("sudo {} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
+			.stdout(Stdio::piped()).spawn().expect("No such pkg");
+	}
+	else if rm_pkgmgr == "nala" {
+		output = Command::new("sh").args(["-c", &format!("sudo {} {} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname, "--assume-yes")])
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if rm_pkgmgr == "yay" || rm_pkgmgr == "flatpak" {
@@ -395,67 +409,93 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 }
 
 fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
-	println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
-	let mut index = 1;
-	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
-	let mut res_string = String::new();
-	for i in 0..pm.name.len() {
-		let mut output;
-		if pm.name[i] == "flatpak" {
-			output = Command::new(pm.name[i].clone()).args([&pm.search_local_cmd[&pm.name[i]], "--columns=application"])
-				.stdout(Stdio::piped()).spawn().expect("");
-		}
-		else {
-			output = Command::new(pm.name[i].clone()).args([&pm.search_local_cmd[&pm.name[i]], pkg]).stdout(Stdio::piped()).spawn()
-				.expect("");
-		}
+    println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
+    let mut index = 1;
+    let (mut pacman_idx, mut yay_idx, mut flatpak_idx, mut nala_idx) = (-1, -1, -1, -1);
+    let mut res_string = String::new();
+    for i in 0..pm.name.len() {
+        let mut output;
+        if pm.name[i] == "flatpak" {
+            output = Command::new(pm.name[i].clone()).args([&pm.search_local_cmd[&pm.name[i]], "--columns=application"])
+                .stdout(Stdio::piped()).spawn().expect("");
+        }
+        else {
+            output = Command::new(pm.name[i].clone()).args([&pm.search_local_cmd[&pm.name[i]], pkg]).stdout(Stdio::piped()).spawn()
+                .expect("");
+        }
 
-		if let Some(stdout) = output.stdout.take() {
-			let reader = BufReader::new(stdout);
-			for line in reader.lines() {
-				let line = &line.unwrap().replace("local/", "");
-				if pm.name[i] == "pacman" && !line.contains("    ") {
-					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, line.replace("[installed]", ""), "pacman");
-					res_string += &line[..fwi];
-					res_string += "\n";
-					pacman_idx = index;
-					index += 1;
-				}
+        if let Some(stdout) = output.stdout.take() {
+            let mut nala_vec: Vec<String> = Vec::new();
+            let reader = BufReader::new(stdout);
+            for line in reader.lines() {
+                let line = &line.unwrap().replace("local/", "");
+                if pm.name[i] == "pacman" && !line.contains("    ") {
+                    let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+                    println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, &line[..fwi].replace("[installed]", ""), "pacman");
+                    res_string += &line[..fwi];
+                    res_string += "\n";
+                    pacman_idx = index as i32;
+                    index += 1;
+                }
 
-				else if pm.name[i] == "yay" && !line.contains("    ") {
-					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					if !res_string.contains(&line[..fwi]) {
-						println!("[{VIOLET}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, line.replace("(Installed)", ""), "yay");
-						res_string += &line[..fwi];
-						res_string += "\n";
-						yay_idx = index;
-						index += 1;
-					}
-				}
+                else if pm.name[i] == "yay" && !line.contains("    ") {
+                    let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+                    if !res_string.contains(&line[..fwi]) {
+                        println!("[{VIOLET}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{VIOLET}{}{RESET}]{RESET}", index, &line[..fwi].replace("(Installed)", ""), "yay");
+                        res_string += &line[..fwi];
+                        res_string += "\n";
+                        yay_idx = index as i32;
+                        index += 1;
+                    }
+                }
 
-				else if pm.name[i]=="flatpak" && line.to_ascii_lowercase().contains(&pkg) {
-					println!("[{GREEN}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{GREEN}{}{RESET}]{RESET}", index, line, &pm.name[i]);
-					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					res_string += &line[..fwi];
-					res_string += "\n";
-					flatpak_idx = index;
-					index += 1;
-				}
-			}
-		}
-	}
+                else if pm.name[i]=="flatpak" && line.to_ascii_lowercase().contains(&pkg) {
+                    println!("[{GREEN}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{GREEN}{}{RESET}]{RESET}", index, line, &pm.name[i]);
+                    let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+                    res_string += &line[..fwi];
+                    res_string += "\n";
+                    flatpak_idx = index as i32;
+                    index += 1;
+                }
 
-	PkgResult {
-		res: res_string,
-		pos: vec![pacman_idx, yay_idx, flatpak_idx],
-	}
+                else if pm.name[i] == "nala" {
+                    if line.contains("[Ubuntu") {
+                        let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+                        let tmp = &line[..fwi];
+                        nala_vec.push(tmp.to_string());
+                        // println!("[{YELLOW}{}{RESET}]: {}", index, tmp);
+                        res_string += &line[..fwi];
+                        res_string += "\n";
+                        // index += 1;
+                    }
+                    else if line.contains("├── is installed") {
+                        // println!("[{YELLOW}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]{RESET}", index, &nala_vec[nala_vec.len() - 1], "nala");
+                        let mut x = nala_vec.pop().unwrap();
+                        x += " INSTALLED";
+                        nala_vec.push(x);
+                    }
+                }
+            }
+
+                        for i in 0..nala_vec.len() {
+                            if nala_vec[i].contains("INSTALLED") {
+                                println!("[{YELLOW}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]", index+i, &nala_vec[i].replace(" INSTALLED", ""), "nala");
+                                nala_idx = (i+index) as i32;
+                            } 
+                        }
+        }
+    }
+
+    PkgResult {
+        res: res_string,
+        pos: vec![pacman_idx, yay_idx, flatpak_idx, nala_idx],
+    }
 }
 
 fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
-	let (mut pacman_idx, mut yay_idx, mut flatpak_idx) = (-1, -1, -1);
+	let (mut pacman_idx, mut yay_idx, mut flatpak_idx, mut nala_idx) = (-1, -1, -1, -1);
 	let mut res_string = String::new();
 	for i in 0..pm.name.len() {
 		let mut output;
@@ -543,8 +583,10 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
                         for i in 0..nala_vec.len() {
                             if nala_vec[i].contains("INSTALLED") {
                                 println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]", index+i, &nala_vec[i].replace(" INSTALLED", ""), "nala");
+                                nala_idx = (i+index) as i32;
                             } else {
                                 println!("[{YELLOW}{}{RESET}]: {}", index + i, &nala_vec[i]);
+                                nala_idx = (i+index) as i32;
                             }
                         }
 		}
@@ -552,7 +594,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	
 	PkgResult {
 		res: res_string,
-		pos: vec![pacman_idx, yay_idx, flatpak_idx],
+		pos: vec![pacman_idx, yay_idx, flatpak_idx, nala_idx],
 	}
 }
 
@@ -611,20 +653,20 @@ fn main() {
 		pm.inst_info_cmd.insert(pm.name[2].clone(), "info".to_string());
 		pm.update_cmd.insert(pm.name[2].clone(), "update".to_string());
 		pm.remove_cmd.insert(pm.name[2].clone(), "uninstall".to_string());
-		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall --unused".to_string());
+		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall".to_string());
 	}
 
 	if pkgmgr_found("/bedrock/cross/bin/nala") {
-		println!(" - {YELLOW}Apt{RESET}");
+		println!(" - {YELLOW}Nala{RESET}");
 		pm.name.push("nala".to_string());
 		pm.install_cmd.insert(pm.name[3].clone(), "install".to_string());
 		pm.search_cmd.insert(pm.name[3].clone(), "search".to_string());
 		pm.search_local_cmd.insert(pm.name[3].clone(), "list".to_string());
 		pm.info_cmd.insert(pm.name[3].clone(), "show".to_string());
-		pm.inst_info_cmd.insert(pm.name[3].clone(), "info".to_string());
-		pm.update_cmd.insert(pm.name[3].clone(), "update".to_string());
+		pm.inst_info_cmd.insert(pm.name[3].clone(), "show".to_string());
+		pm.update_cmd.insert(pm.name[3].clone(), "upgrade".to_string());
 		pm.remove_cmd.insert(pm.name[3].clone(), "uninstall".to_string());
-		pm.cleanup_cmd.insert(pm.name[3].clone(), "uninstall --unused".to_string());
+		pm.cleanup_cmd.insert(pm.name[3].clone(), "autopurge".to_string());
 	}
 	match rockcmd {
 		"install"          | "i"      => install_pkg(&pm, &pkgname),
