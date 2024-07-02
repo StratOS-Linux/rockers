@@ -102,15 +102,15 @@ fn adjust_idx(a: i32, b: i32, c: i32, d: i32) {
 	if a==-1 && b==-1 && c==-1 && d==-1 { // no matches at all
 		print!("{ITALIC}No matching packages found.{RESET}");
 		exit(-1);
-	} else if b==-1 && c==-1 && d==-1 { // only pacman / yay error 429 and no flatpak
+	} else if b==-1 && c==-1 && d==-1 { // only pacman
 		print!("{ITALIC}Select package [1-{}]: {RESET}", a);
 		let _ = io::stdout().flush();
-	} else if c==-1 && d==-1{ // yay error 429 only / no AUR packages
+	} else if c==-1 && d==-1{ // only pacman, yay
 		print!("{ITALIC}Select package [1-{}]: {RESET}", b);
 		let _ = io::stdout().flush();
-        } else if d==-1 {
-                print!("{ITALIC}Select package [1-{}]: {RESET}", c);
-                let _ = io::stdout().flush();
+    } else if d==-1 {
+        print!("{ITALIC}Select package [1-{}]: {RESET}", c);
+        let _ = io::stdout().flush();
 	} else {
 		print!("{ITALIC}Select package [1-{}]: {RESET}", d);
 		let _ = io::stdout().flush();
@@ -163,7 +163,7 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 
 fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_pkg(&pm, pkg);
-        println!("{}", x.res);
+    println!("{}", x.res);
 	let mut input_pkg_str = String::new();
 	
 	adjust_idx(x.pos[0], x.pos[1], x.pos[2], x.pos[3]);
@@ -175,7 +175,7 @@ fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	if 1 <= input_pkg_num && input_pkg_num <= x.pos[0] { info_pkgmgr = "pacman"; }
 	else if x.pos[0] < input_pkg_num && input_pkg_num <= x.pos[1] { info_pkgmgr = "yay"; }
 	else if x.pos[1] < input_pkg_num && input_pkg_num <= x.pos[2] { info_pkgmgr = "flatpak"; }
-        else if x.pos[2] < input_pkg_num && input_pkg_num <= x.pos[3] { info_pkgmgr = "nala"; }
+    else if x.pos[2] < input_pkg_num && input_pkg_num <= x.pos[3] { info_pkgmgr = "nala"; }
 	else if input_pkg_num > x.pos[3] {
 		println!("{RED}ERROR: {RESET}{UNDERLINE}Enter a valid number.{RESET}");
 		exit(-1);
@@ -275,7 +275,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 				for line in reader.lines() {
 					if let Ok(line) = line {
 						if !line.contains("no targets specified") {
-							 println!("{line}");
+							println!("{line}");
 						}
 					}
 				}
@@ -477,12 +477,12 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
                 }
             }
 
-                        for i in 0..nala_vec.len() {
-                            if nala_vec[i].contains("INSTALLED") {
-                                println!("[{YELLOW}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]", index+i, &nala_vec[i].replace(" INSTALLED", ""), "nala");
-                                nala_idx = (i+index) as i32;
-                            } 
-                        }
+            for i in 0..nala_vec.len() {
+                if nala_vec[i].contains("INSTALLED") {
+                    println!("[{YELLOW}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]", index+i, &nala_vec[i].replace(" INSTALLED", ""), "nala");
+                    nala_idx = (i+index) as i32;
+                } 
+            }
         }
     }
 
@@ -510,7 +510,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 		}
 		if let Some(stdout) = output.stdout.take() {
 			let reader = BufReader::new(stdout);
-                        let mut nala_vec: Vec<String> = Vec::new();
+            let mut nala_vec: Vec<String> = Vec::new();
 			for line in reader.lines() {
 				let line = &line.unwrap().replace("extra/", "").replace("aur/", "").replace("core/", "");
 				if pm.name[i] == "pacman" {
@@ -560,35 +560,35 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 					index += 1;
 				}
 
-                                else if pm.name[i] == "nala" {
-                                    if line.contains("[Ubuntu") {
-                                        let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-                                        let tmp = &line[..fwi];
-                                        nala_vec.push(tmp.to_string());
-                                        // println!("[{YELLOW}{}{RESET}]: {}", index, tmp);
-                                        res_string += &line[..fwi];
-                                        res_string += "\n";
-                                        // index += 1;
-                                    }
-                                    else if line.contains("├── is installed") {
-                                        // println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]{RESET}", index, &nala_vec[nala_vec.len() - 1], "nala");
-                                        let mut x = nala_vec.pop().unwrap();
-                                        x += " INSTALLED";
-                                        nala_vec.push(x);
-                                    }
+                else if pm.name[i] == "nala" {
+                    if line.contains("[Ubuntu") {
+                        let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
+                        let tmp = &line[..fwi];
+                        nala_vec.push(tmp.to_string());
+                        // println!("[{YELLOW}{}{RESET}]: {}", index, tmp);
+                        res_string += &line[..fwi];
+                        res_string += "\n";
+                        // index += 1;
+                    }
+                    else if line.contains("├── is installed") {
+                        // println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]{RESET}", index, &nala_vec[nala_vec.len() - 1], "nala");
+                        let mut x = nala_vec.pop().unwrap();
+                        x += " INSTALLED";
+                        nala_vec.push(x);
+                    }
 
-                                }
+                }
 			}
 
-                        for i in 0..nala_vec.len() {
-                            if nala_vec[i].contains("INSTALLED") {
-                                println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]", index+i, &nala_vec[i].replace(" INSTALLED", ""), "nala");
-                                nala_idx = (i+index) as i32;
-                            } else {
-                                println!("[{YELLOW}{}{RESET}]: {}", index + i, &nala_vec[i]);
-                                nala_idx = (i+index) as i32;
-                            }
-                        }
+            for i in 0..nala_vec.len() {
+                if nala_vec[i].contains("INSTALLED") {
+                    println!("[{HIGHLIGHT}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{YELLOW}{}{RESET}]", index+i, &nala_vec[i].replace(" INSTALLED", ""), "nala");
+                    nala_idx = (i+index) as i32;
+                } else {
+                    println!("[{YELLOW}{}{RESET}]: {}", index + i, &nala_vec[i]);
+                    nala_idx = (i+index) as i32;
+                }
+            }
 		}
 	}
 	
