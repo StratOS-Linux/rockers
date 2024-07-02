@@ -108,10 +108,10 @@ fn adjust_idx(a: i32, b: i32, c: i32, d: i32) {
 	} else if c==-1 && d==-1{ // only pacman, yay
 		print!("{ITALIC}Select package [1-{}]: {RESET}", b);
 		let _ = io::stdout().flush();
-    } else if d==-1 {
+    } else if d==-1 { // only pacman, yay, flatpak
         print!("{ITALIC}Select package [1-{}]: {RESET}", c);
         let _ = io::stdout().flush();
-	} else {
+	} else { // all 4 PMs
 		print!("{ITALIC}Select package [1-{}]: {RESET}", d);
 		let _ = io::stdout().flush();
 	}
@@ -163,7 +163,6 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 
 fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_pkg(&pm, pkg);
-    println!("{}", x.res);
 	let mut input_pkg_str = String::new();
 	
 	adjust_idx(x.pos[0], x.pos[1], x.pos[2], x.pos[3]);
