@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused)]
 use std::path::Path;
 use std::process::exit;
 use std::{env, process::{Command, Stdio}};
@@ -42,53 +40,47 @@ fn banner() {
 	let s = format!(r#"
 {BOLD}Usage{RESET}: {RED}rock{RESET} {YELLOW}[function] [flag] <input>{RESET}                                                          
 
-{BOLD}functions{RESET}:
-    {UNDERLINE}install{RESET}: Install package(s) - Prompts user to respond with 
-             the number(s) associated with the desired package(s).
+{BOLD}Functions{RESET}:
+    {UNDERLINE}install (i){RESET}: Install a package - Pick the number associated with the desired package.
              
-    {UNDERLINE}remove{RESET}:  Uninstall package(s) - Prompts user to respond with
-             the number(s) associated with the desired package(s).
+    {UNDERLINE}remove (r){RESET}:  Uninstall package(s) - Pick the number associated with the desired package. Removes related unnecessary dependencies.
 
-    {UNDERLINE}info{RESET}: Provide information about the package.
+    {UNDERLINE}info (if){RESET}: Retrieve remote information about the package. Fetches information from the relevant repo.
              
-    {UNDERLINE}search{RESET}:  Search for package(s) - Does not have a second prompt.
-    
-    {UNDERLINE}update{RESET}:  Updates all packages accessible to the wrapper - does
-             not accept <input>, instead use install to update 
-             individual packages. Has a confirmation prompt.
+    {UNDERLINE}install-info (iif){RESET}: Display local information about the package. Fetches information from the installed package.
 
-    {UNDERLINE}cleanup{RESET}: Attempts to repair broken dependencies and remove any
-             unused packages. Does not accept <input>, but has 
-             a confirmation prompt.
-
-{BOLD}flags{RESET}: 
-    {UNDERLINE}--help{RESET}/{UNDERLINE}-h{RESET}: Display this page
+    {UNDERLINE}search (s){RESET}:  Search for {ITALIC}package{RESET} across configured package managers.
     
-{BOLD}input{RESET}: 
+    {UNDERLINE}update (u){RESET}:  Update all packages across package managers. Doesn't take secondary arguments.
+
+    {UNDERLINE}cleanup (c){RESET}: Remove any unused packages. Does not accept secondary arguments.
+
+{BOLD}Flags{RESET}: 
+    {UNDERLINE}--help{RESET}/{UNDERLINE}-h{RESET}: Display this help page.
+    
+{BOLD}Input{RESET}: 
     Provide a package name or description.
 
 {BOLD}Example execution:{RESET}
-    $ {ITALIC}rock install foobar{RESET}
-    Found packages matching 'foobar':
+    $ {ITALIC}rock install kitty{RESET}
+    Finding packages matching 'kitty':
 
-    [{GREEN}0{RESET}]: pyfoobar ({GREEN}apt{RESET})
-    [{GREEN}1{RESET}]: foobarshell ({GREEN}apt{RESET})
-    [{YELLOW}2{RESET}]: foobar ({YELLOW}flatpak{RESET})
-    [{BLUE}3{RESET}]: foobar ({BLUE}pacman{RESET})
-    [{VIOLET}4{RESET}]: foobar-bin ({VIOLET}yay{RESET})
-    [{VIOLET}5{RESET}]: foobar-theme ({VIOLET}yay{RESET})
-    [{RED}6{RESET}]: foobar-web ({RED}snap{RESET})
+    [{HIGHLIGHT}1{RESET}]: {ITALIC}kitty{RESET} [{BLUE}pacman{RESET}]
+    [{HIGHLIGHT}2{RESET}]: {ITALIC}kitty-shell-integration{RESET} [{BLUE}pacman{RESET}]
+    [{BLUE}3{RESET}]: hyperkitty 
+    [{VIOLET}4{RESET}]: kitty-git
+    [{VIOLET}5{RESET}]: kitty-terminfo-git
+    [{GREEN}6{RESET}]: com.daidouji.oneko
+    [{YELLOW}7{RESET}]: kitty
+    [{YELLOW}8{RESET}]: hyperkitty
 
-    Select which package to install [0-5]: 3 4 5
-    Selecting '{VIOLET}foobar-web{RESET}' from package manager '{VIOLET}snap{RESET}'
-    Selecting '{VIOLET}foobar-bin{RESET}' from package manager '{VIOLET}yay{RESET}'
-    Selecting '{VIOLET}foobar-theme{RESET}' from package manager '{VIOLET}yay{RESET}'
-    Are you sure? (y/N)
+    Select package [1-8]: 3
+    {ITALIC}Installing package{RESET} {HIGHLIGHT}hyperkitty{RESET}.
     [...]
 
-rock 0.1.3
+rock 0.1
 A package manager wrapper for StratOS
-Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com> for StratOS
+Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com> 
 "#);
 	println!("{}", s);
 }
