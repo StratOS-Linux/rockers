@@ -1,4 +1,4 @@
-set -l rock_cmds install i remove r info if install-info iif search s update u cleanup c --help -h
+set -l rock_cmds install i remove r info if install-info iif search s update u clean c --help -h
 
 complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a install -d "Install package"
 complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a i -d "Alias: Install package"
@@ -18,7 +18,7 @@ complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a s -d "Ali
 complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a update -d "Update all packages"
 complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a u -d "Alias: Update all packages"
 
-complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a cleanup -d "Remove unused packages"
+complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a clean -d "Remove unused packages"
 complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a c -d "Alias: Remove unused packages"
 
 complete -f -c rock -n "not __fish_seen_subcommand_from $rock_cmds" -a --help -d "Display usage"
