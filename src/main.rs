@@ -274,7 +274,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 		}
 		else if pm.name[i] == "flatpak" { // no need to check for yay.
 			output = Command::new("sh")
-				.args(["-c", &format!("{} {} {} ", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], "--unused")])
+				.args(["-c", &format!("{} {} {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], "--unused", "--assumeyes")])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 		}
 	}
@@ -503,7 +503,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 			let reader = BufReader::new(stdout);
             let mut nala_vec: Vec<String> = Vec::new();
 			for line in reader.lines() {
-				let line = &line.unwrap().replace("extra/", "").replace("aur/", "").replace("core/", "");
+				let line = &line.unwrap().replace("extra/", "").replace("aur/", "").replace("core/", "").replace("stratos/", "");
 				if pm.name[i] == "pacman" {
 					if line.contains("[installed]") {
 						let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
