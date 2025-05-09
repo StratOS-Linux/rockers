@@ -491,11 +491,18 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	for i in 0..pm.name.len() {
 		let mut output;
 		if pm.name[i] == "flatpak" {
+			println!("\n{BOLD}{ITALIC}>>>{GREEN} Flathub  {RESET}\n");
 			output = Command::new(pm.name[i].clone())
 				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=application"]).stdout(Stdio::piped()).spawn()
 				.expect("");
 		}
 		else {
+			match pm.name[i].as_str() {
+				"pacman" => println!("\n{BOLD}{ITALIC}>>>{BLUE} Arch Linux repos 󰣇 {RESET}\n"),
+				"yay" => println!("\n{BOLD}{ITALIC}>>>{VIOLET} Arch User Repository 󰣇 {RESET}\n"),
+				"apt" | "nala" => println!("\n{BOLD}{ITALIC}>>>{YELLOW} Ubuntu repos   {RESET}\n"),
+				_ => {}
+			}
 			output = Command::new(pm.name[i].clone()).args([&pm.search_cmd[&pm.name[i]], pkg]).stdout(Stdio::piped()).spawn()
 				.expect("");
 		}
