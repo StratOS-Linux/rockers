@@ -675,7 +675,7 @@ fn main() {
 	};
 	
 	if pkgmgr_found("/usr/bin/pacman") {
-		println!("\n{BOLD}{ITALIC}>>>{BLUE} Pacman 󰣇 {RESET}\n");
+		println!("{BOLD}{ITALIC} 󰱒 {BLUE} Pacman 󰣇 {RESET}");
 		pm.name.push("pacman".to_string());
 		pm.install_cmd.insert(pm.name[0].clone(), "-S".to_string());
 		pm.search_cmd.insert(pm.name[0].clone(), "-Ss".to_string());
@@ -685,10 +685,12 @@ fn main() {
 		pm.update_cmd.insert(pm.name[0].clone(), "-Syu".to_string());
 		pm.remove_cmd.insert(pm.name[0].clone(), "-Rns".to_string());
 		pm.cleanup_cmd.insert(pm.name[0].clone(), "-Rcns".to_string());
+	} else {
+		println!("{BOLD}{ITALIC} 󰄱 {BLUE} Pacman 󰣇 {RESET}");
 	}
 	
 	if pkgmgr_found("/usr/bin/yay") {
-		println!("\n{BOLD}{ITALIC}>>>{VIOLET} Yay 󰣇 {RESET}\n");
+		println!("{BOLD}{ITALIC} 󰱒 {VIOLET} Yay 󰣇 {RESET}");
 		pm.name.push("yay".to_string());
 		pm.install_cmd.insert(pm.name[1].clone(), "-Sa".to_string());
 		pm.search_cmd.insert(pm.name[1].clone(), "-Ssa".to_string());
@@ -698,10 +700,12 @@ fn main() {
 		pm.update_cmd.insert(pm.name[1].clone(), "-Syu".to_string());
 		pm.remove_cmd.insert(pm.name[1].clone(), "-Rns".to_string());
 		pm.cleanup_cmd.insert(pm.name[1].clone(), "-Rcns".to_string());
+	} else {
+		println!("{BOLD}{ITALIC} 󰄱 {VIOLET} Yay 󰣇 {RESET}");
 	}
 	
 	if pkgmgr_found("/usr/bin/flatpak") {
-		println!("\n{BOLD}{ITALIC}>>>{GREEN} Flatpak  {RESET}\n");
+		println!("{BOLD}{ITALIC} 󰱒 {GREEN} Flatpak  {RESET}");
 		pm.name.push("flatpak".to_string());
 		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
 		pm.search_cmd.insert(pm.name[2].clone(), "search".to_string());
@@ -711,10 +715,12 @@ fn main() {
 		pm.update_cmd.insert(pm.name[2].clone(), "update".to_string());
 		pm.remove_cmd.insert(pm.name[2].clone(), "uninstall".to_string());
 		pm.cleanup_cmd.insert(pm.name[2].clone(), "uninstall".to_string());
+	} else {
+		println!("{BOLD}{ITALIC} 󰄱 {GREEN} Flatpak  {RESET}");
 	}
 
 	if pkgmgr_found("/bedrock/cross/bin/nala") {
-		println!("\n{BOLD}{ITALIC}>>>{YELLOW} Apt   {RESET}\n");
+		println!("{BOLD}{ITALIC} 󰱒 {YELLOW} Apt   {RESET}");
 		pm.name.push("nala".to_string());
 		pm.install_cmd.insert(pm.name[3].clone(), "install".to_string());
 		pm.search_cmd.insert(pm.name[3].clone(), "search".to_string());
@@ -724,6 +730,8 @@ fn main() {
 		pm.update_cmd.insert(pm.name[3].clone(), "upgrade".to_string());
 		pm.remove_cmd.insert(pm.name[3].clone(), "uninstall".to_string());
 		pm.cleanup_cmd.insert(pm.name[3].clone(), "autopurge".to_string());
+	} else {
+		println!("{BOLD}{ITALIC} 󰄱 {YELLOW} Apt   {RESET}");
 	}
 	match rockcmd {
 		"install"          | "i"      => install_pkg(&pm, &pkgname),
