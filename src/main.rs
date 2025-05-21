@@ -82,8 +82,8 @@ fn banner() {
     {ITALIC}Installing package{RESET} {HIGHLIGHT}hyperkitty{RESET}.
     [...]
 
-Rock 0.1
-A package manager wrapper for {BOLD}StratOS{RESET} (https://stratos-linux.github.io/)
+Rockers 0.2
+A package manager wrapper for {BOLD}StratOS{RESET} (https://stratos-linux.org/)
 Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com> 
 "#);
 	println!("{}", s);
