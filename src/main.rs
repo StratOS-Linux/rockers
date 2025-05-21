@@ -24,6 +24,8 @@ struct PkgResult {
 
 #[derive(Debug)]
 #[derive(Clone)]
+
+// struct Pkgmgrs {{{
 struct Pkgmgrs {
 	name: Vec<String>,
 	install_cmd: HashMap<String, String>,
@@ -35,7 +37,9 @@ struct Pkgmgrs {
 	remove_cmd:  HashMap<String, String>,
 	cleanup_cmd:  HashMap<String, String>,
 }
+// }}}
 
+// banner {{{
 fn banner() {
 	let s = format!(r#"
 {BOLD}Usage{RESET}: {RED}rock{RESET} {YELLOW}[function] [flag] <input>{RESET}                                                          
@@ -85,11 +89,30 @@ Developed by Magitian <magitian@duck.com> & ZeStig <o0vckutt@duck.com>
 	println!("{}", s);
 }
 
+// }}}
+
+fn print_pacman() {
+	println!("\n{BOLD}{ITALIC}>>>{BLUE} Arch Linux repos 󰣇 {RESET}\n");
+}
+
+fn print_yay() {
+	println!("\n{BOLD}{ITALIC}>>>{VIOLET} Arch User Repository 󰣇 {RESET}\n");
+}
+
+fn print_flatpak() {
+	println!("\n{BOLD}{ITALIC}>>>{GREEN} Flathub  {RESET}\n");
+}
+
+fn print_apt() {
+	println!("\n{BOLD}{ITALIC}>>>{YELLOW} Ubuntu repos   {RESET}\n");
+}
+
 fn pkgmgr_found(p: &str) -> bool {
 	if Path::new(p).is_file() { return true; }
 	false
 }
 
+// adjust_idx {{{
 fn adjust_idx(a: i32, b: i32, c: i32, d: i32) {
 	if a==-1 && b==-1 && c==-1 && d==-1 { // no matches at all
 		print!("{ITALIC}No matching packages found.{RESET}");
@@ -108,7 +131,9 @@ fn adjust_idx(a: i32, b: i32, c: i32, d: i32) {
 		let _ = io::stdout().flush();
 	}
 }
+// }}}
 
+// inst_info_pkg {{{
 fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_local_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
@@ -152,7 +177,9 @@ fn inst_info_pkg(pm: &Pkgmgrs, pkg: &str) {
 		}
 	}
 }
+// }}}
 
+// info_pkg {{{
 fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
@@ -201,24 +228,34 @@ fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 		}
 	}
 }
+// }}}
 
+// update_pkg {{{
 fn update_pkg(pm: &Pkgmgrs) {
     println!("\n{ITALIC}Updating packages {RESET}");
 
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	
 	for i in 0..pm.name.len() {
+		let noc = match pm.name[i].as_str() {
+			"pacman" | "yay" => "--noconfirm",
+			"apt" | "nala" => "-y",
+			_ => "--assumeyes"
+		};
 		if pm.name[i] == "pacman" || pm.name[i] == "nala" { // run with sudo.
-			output = Command::new("sh").args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]])])
+			if pm.name[i] == "pacman" {print_pacman()} // TODO
+			output = Command::new("sh").args(["-c", &format!("sudo {} {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]], noc)])
 				.stdout(Stdio::piped()).spawn().expect("Failed to start command");
 		}
 		else if pm.name[i] == "yay" {
-			output = Command::new("sh").args(["-c", &format!("{} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]])])
+			print_yay();
+			output = Command::new("sh").args(["-c", &format!("{} {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]], noc)])
 				.stdout(Stdio::piped()).spawn().expect("Failed to start command");
 		}
 		else if pm.name[i] == "flatpak" {
+			print_flatpak();
 			output = Command::new("sh")
-				.args(["-c", &format!("sudo {} {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]], "--noninteractive")])
+				.args(["-c", &format!("sudo {} {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]], noc)])
 				.stdout(Stdio::piped()).spawn().expect("");
 		}
 		if let Some(stdout) = output.stdout.take() {
@@ -231,7 +268,9 @@ fn update_pkg(pm: &Pkgmgrs) {
 		}
 	}
 }
+// }}}
 
+// cleanup_pkg {{{
 fn cleanup_pkg(pm: &Pkgmgrs) {
 	println!("{ITALIC}Finding unused packages:{RESET}");
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
@@ -242,6 +281,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 		}
 		else if pm.name[i] == "pacman" {
+			print_pacman();
 			let mut unused_pkgs: Vec<String> = Vec::new();
 			let mut unused_pkgs_str = String::new();
 			let mut output1 = Command::new(&pm.name[i]).arg("-Qtdq").stdout(Stdio::piped()).spawn().expect("");
@@ -259,7 +299,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 			}
 
 			_ = Command::new("sh").args(["-c", &format!("sudo rm -f /var/lib/pacman/db.lck")]).spawn();
-			output = Command::new("sh").args(["-c", &format!("sudo {} {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], unused_pkgs_str)])
+			output = Command::new("sh").args(["-c", &format!("sudo {} {} {} --noconfirm", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], unused_pkgs_str)])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 			if let Some(stdout) = output.stdout.take() {
 				let reader = BufReader::new(stdout);
@@ -273,6 +313,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 			}
 		}
 		else if pm.name[i] == "flatpak" { // no need to check for yay.
+			print_flatpak();
 			output = Command::new("sh")
 				.args(["-c", &format!("{} {} {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], "--unused", "--assumeyes")])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
@@ -290,8 +331,9 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 		}
 	}
 }
+// }}}
 
-
+// install_pkg {{{
 fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
@@ -321,19 +363,25 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 		exit(-1);
 	}
 
+	let noc = match inst_pkgmgr {
+		"pacman" | "yay" => "--noconfirm",
+		"apt" | "nala" => "-y",
+		_ => "--assumeyes"
+	};
+	
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	if inst_pkgmgr == "pacman" {
 		output = Command::new("sh")
-			.args(["-c", &format!("sudo {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname)])
+			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, noc)])
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if inst_pkgmgr == "nala" {
 		output = Command::new("sh")
-			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, "--assume-yes")])
+			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, noc)])
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if inst_pkgmgr == "yay" || inst_pkgmgr == "flatpak" {
-		output = Command::new("sh").args(["-c", &format!("{} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname)])
+		output = Command::new("sh").args(["-c", &format!("{} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, noc)])
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	
@@ -346,7 +394,9 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 		}
 	}
 }
+// }}}
 
+// remove_pkg {{{
 fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 	let x = display_local_pkg(&pm, pkg);
 	let mut input_pkg_str = String::new();
@@ -377,7 +427,8 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	if rm_pkgmgr == "pacman" {
-		output = Command::new("sh").args(["-c", &format!("sudo {} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
+		print_pacman();
+		output = Command::new("sh").args(["-c", &format!("sudo {} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)]) // ask for user confirmation for removal.
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if rm_pkgmgr == "nala" {
@@ -385,6 +436,8 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if rm_pkgmgr == "yay" || rm_pkgmgr == "flatpak" {
+		if rm_pkgmgr=="yay" {print_yay();}
+		else {print_flatpak()}
 		output = Command::new("sh").args(["-c", &format!("{} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
@@ -398,7 +451,9 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 		}
 	}
 }
+// }}}
 
+// display_local_pkg {{{
 fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
     println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
     let mut index = 1;
@@ -482,7 +537,9 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
         pos: vec![pacman_idx, yay_idx, flatpak_idx, nala_idx],
     }
 }
+// }}}
 
+// display_pkg {{{
 fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	println!("\n{ITALIC}Finding packages matching '{}{RESET}':", pkg);
 	let mut index = 1;
@@ -491,16 +548,16 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 	for i in 0..pm.name.len() {
 		let mut output;
 		if pm.name[i] == "flatpak" {
-			println!("\n{BOLD}{ITALIC}>>>{GREEN} Flathub  {RESET}\n");
+			print_flatpak();
 			output = Command::new(pm.name[i].clone())
 				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=application"]).stdout(Stdio::piped()).spawn()
 				.expect("");
 		}
 		else {
 			match pm.name[i].as_str() {
-				"pacman" => println!("\n{BOLD}{ITALIC}>>>{BLUE} Arch Linux repos 󰣇 {RESET}\n"),
-				"yay" => println!("\n{BOLD}{ITALIC}>>>{VIOLET} Arch User Repository 󰣇 {RESET}\n"),
-				"apt" | "nala" => println!("\n{BOLD}{ITALIC}>>>{YELLOW} Ubuntu repos   {RESET}\n"),
+				"pacman" => print_pacman(),
+				"yay" => print_yay(),
+				"apt" | "nala" => print_apt(),
 				_ => {}
 			}
 			output = Command::new(pm.name[i].clone()).args([&pm.search_cmd[&pm.name[i]], pkg]).stdout(Stdio::piped()).spawn()
@@ -595,7 +652,9 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 		pos: vec![pacman_idx, yay_idx, flatpak_idx, nala_idx],
 	}
 }
+// }}}
 
+// main {{{
 fn main() {
 	let args: Vec<String> = env::args().collect();
 	let mut rockcmd = "";
@@ -616,7 +675,7 @@ fn main() {
 	};
 	
 	if pkgmgr_found("/usr/bin/pacman") {
-		println!(" - {BLUE}Pacman{RESET}");
+		println!("\n{BOLD}{ITALIC}>>>{BLUE} Pacman 󰣇 {RESET}\n");
 		pm.name.push("pacman".to_string());
 		pm.install_cmd.insert(pm.name[0].clone(), "-S".to_string());
 		pm.search_cmd.insert(pm.name[0].clone(), "-Ss".to_string());
@@ -629,7 +688,7 @@ fn main() {
 	}
 	
 	if pkgmgr_found("/usr/bin/yay") {
-		println!(" - {VIOLET}Yay{RESET}");
+		println!("\n{BOLD}{ITALIC}>>>{VIOLET} Yay 󰣇 {RESET}\n");
 		pm.name.push("yay".to_string());
 		pm.install_cmd.insert(pm.name[1].clone(), "-Sa".to_string());
 		pm.search_cmd.insert(pm.name[1].clone(), "-Ssa".to_string());
@@ -642,7 +701,7 @@ fn main() {
 	}
 	
 	if pkgmgr_found("/usr/bin/flatpak") {
-		println!(" - {GREEN}Flatpak{RESET}");
+		println!("\n{BOLD}{ITALIC}>>>{GREEN} Flatpak  {RESET}\n");
 		pm.name.push("flatpak".to_string());
 		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
 		pm.search_cmd.insert(pm.name[2].clone(), "search".to_string());
@@ -655,7 +714,7 @@ fn main() {
 	}
 
 	if pkgmgr_found("/bedrock/cross/bin/nala") {
-		println!(" - {YELLOW}Nala{RESET}");
+		println!("\n{BOLD}{ITALIC}>>>{YELLOW} Apt   {RESET}\n");
 		pm.name.push("nala".to_string());
 		pm.install_cmd.insert(pm.name[3].clone(), "install".to_string());
 		pm.search_cmd.insert(pm.name[3].clone(), "search".to_string());
@@ -678,3 +737,4 @@ fn main() {
 		_                             => print!("{BOLD}Invalid Usage.{RESET} Consult {ITALIC}rock --help{RESET} for more information."),
 	}
 }
+// }}}
