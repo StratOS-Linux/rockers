@@ -371,17 +371,19 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 	
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	if inst_pkgmgr == "pacman" {
-		output = Command::new("sh")
-			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, noc)])
+		output = Command::new("sudo").arg(&inst_pkgmgr).arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc).arg("--color=always")
+			.stdout(Stdio::piped()).spawn().expect("No such pkg");
+	}
+	else if inst_pkgmgr == "yay" {
+		output = Command::new(&inst_pkgmgr).arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc).arg("--color=always")
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if inst_pkgmgr == "nala" {
-		output = Command::new("sh")
-			.args(["-c", &format!("sudo {} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, noc)])
+		output = Command::new("sudo").arg(&inst_pkgmgr).arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc)
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
-	else if inst_pkgmgr == "yay" || inst_pkgmgr == "flatpak" {
-		output = Command::new("sh").args(["-c", &format!("{} {} {} {}", &inst_pkgmgr, &pm.install_cmd[inst_pkgmgr], inst_pkgname, noc)])
+	else if inst_pkgmgr == "flatpak" {
+		output = Command::new(&inst_pkgmgr).arg(&inst_pkgmgr).arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc)
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	
@@ -657,15 +659,19 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 // main {{{
 fn main() {
 	let args: Vec<String> = env::args().collect();
-	let mut rockcmd = "";
-	let mut pkgname = ""; // to handle cases where a pkg name is not required
+	let mut rockcmd: &str = "";
+	let mut pkgname: String = String::from(""); // to handle cases where a pkg name is not required
 
 	match args.len() {
 		1 => banner(),
 		2 => { rockcmd = &args[1]; }
-		3 => { rockcmd = &args[1]; pkgname = &args[2]; }
-		_ => {}
+		_ => {
+			rockcmd = &args[1];
+			pkgname = args[2..].join(" ");
+		}
 	}
+
+	println!("Package manager: {}, package: {}", rockcmd, pkgname);
 
 	println!("{ITALIC}Package managers detected:{RESET}");
 	let mut pm = Pkgmgrs {
