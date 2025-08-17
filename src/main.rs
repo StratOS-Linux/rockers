@@ -238,24 +238,24 @@ fn update_pkg(pm: &Pkgmgrs) {
 	
 	for i in 0..pm.name.len() {
 		let noc = match pm.name[i].as_str() {
-			"pacman" | "yay" => "--noconfirm",
+			"pacman" | "yay" => "--color=always",
 			"apt" | "nala" => "-y",
 			_ => "--assumeyes"
 		};
 		if pm.name[i] == "pacman" || pm.name[i] == "nala" { // run with sudo.
 			if pm.name[i] == "pacman" {print_pacman()} // TODO
-			output = Command::new("sh").args(["-c", &format!("sudo {} {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]], noc)])
+			output = Command::new("sudo").arg(&pm.name[i]).arg(&pm.update_cmd[&pm.name[i]]).arg(noc)
 				.stdout(Stdio::piped()).spawn().expect("Failed to start command");
 		}
 		else if pm.name[i] == "yay" {
 			print_yay();
-			output = Command::new("sh").args(["-c", &format!("{} {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]], noc)])
+			output = Command::new(&pm.name[i]).arg(&pm.update_cmd[&pm.name[i]]).arg(noc)
 				.stdout(Stdio::piped()).spawn().expect("Failed to start command");
 		}
 		else if pm.name[i] == "flatpak" {
 			print_flatpak();
-			output = Command::new("sh")
-				.args(["-c", &format!("sudo {} {} {}", &pm.name[i], &pm.update_cmd[&pm.name[i]], noc)])
+			output = Command::new(&pm.name[i])
+				.arg(&pm.update_cmd[&pm.name[i]]).arg(noc)
 				.stdout(Stdio::piped()).spawn().expect("");
 		}
 		if let Some(stdout) = output.stdout.take() {
