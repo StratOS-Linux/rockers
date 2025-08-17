@@ -17,11 +17,11 @@ source=()
 noextract=()
 
 build() {
-	cargo build --release --locked --target-dir=/tmp/rockers.pacman
+	sudo -E cargo build --release --locked --target-dir=/tmp/rockers.pacman
 }
 
 package() {
-	install -Dm755 "/tmp/rockers.pacman/release/rock" -t "$pkgdir/usr/bin/"
-	install -Dm644 "$startdir/rock.fish" "$pkgdir/usr/share/fish/completions/rock.fish"
+	sudo -E install -Dm755 "/tmp/rockers.pacman/release/rock" -t "$pkgdir/usr/bin/"
+	sudo -E install -Dm644 "$startdir/rock.fish" "$pkgdir/usr/share/fish/completions/rock.fish"
 }
 
