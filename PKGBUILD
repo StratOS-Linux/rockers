@@ -1,16 +1,12 @@
 # Maintainer: Magitian <magitian@duck.com>
 pkgname='rockers'
-pkgver='0.2'
-pkgrel=3
+pkgver=0.2
+pkgrel=4
 pkgdesc="StratOS's package manager manager"
 arch=('x86_64')
 url='https://github.com/stratos-linux/rockers'
 license=('GPL-3.0-or-later')
-makedepends=(
-	'rust'
-	'git'
-)
-
+makedepends=('rust' 'git')
 optdepends=(
 	'yay-bin: AUR support'
 	'flatpak: Flatpak support'
@@ -18,13 +14,14 @@ optdepends=(
 provides=('rock')
 conflicts=('rock')
 source=()
-prepare() {
-  cd $srcdir
-  cargo build -r --target-dir=$srcdir/
+noextract=()
+
+build() {
+	cargo build --release --locked --target-dir=/tmp/rockers.pacman
 }
 
 package() {
-	install -Dm755 "$srcdir/release/rock" -vt "$pkgdir"/usr/bin
-	mkdir -p "$pkgdir/usr/share/fish/completions/"
-	install -Dm644 "$startdir/rock.fish" -vt "$pkgdir"/usr/share/fish/completions/
+	install -Dm755 "/tmp/rockers.pacman/release/rock" -t "$pkgdir/usr/bin/"
+	install -Dm644 "$startdir/rock.fish" "$pkgdir/usr/share/fish/completions/rock.fish"
 }
+
