@@ -671,8 +671,6 @@ fn main() {
 		}
 	}
 
-	println!("Package manager: {}, package: {}", rockcmd, pkgname);
-
 	println!("{ITALIC}Package managers detected:{RESET}");
 	let mut pm = Pkgmgrs {
 		name: Vec::new(), install_cmd: HashMap::new(), search_cmd: HashMap::new(), search_local_cmd: HashMap::new(),

@@ -1,7 +1,7 @@
 # Maintainer: Magitian <magitian@duck.com>
 pkgname='rockers'
 pkgver=0.3
-pkgrel=0
+pkgrel=1
 pkgdesc="StratOS's package manager manager"
 arch=('x86_64')
 url='https://github.com/stratos-linux/rockers'
