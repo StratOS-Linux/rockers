@@ -118,16 +118,16 @@ fn adjust_idx(a: i32, b: i32, c: i32, d: i32) {
 		print!("{ITALIC}No matching packages found.{RESET}");
 		exit(-1);
 	} else if b==-1 && c==-1 && d==-1 { // only pacman
-		print!("{ITALIC}Select package [1-{}]: {RESET}", a);
+		print!("\n{ITALIC}Select package [1-{}]: {RESET}", a);
 		let _ = io::stdout().flush();
 	} else if c==-1 && d==-1{ // only pacman, paru
-		print!("{ITALIC}Select package [1-{}]: {RESET}", b);
+		print!("\n{ITALIC}Select package [1-{}]: {RESET}", b);
 		let _ = io::stdout().flush();
     } else if d==-1 { // only pacman, paru, flatpak
-        print!("{ITALIC}Select package [1-{}]: {RESET}", c);
+        print!("{ITALIC}\nSelect package [1-{}]: {RESET}", c);
         let _ = io::stdout().flush();
 	} else { // all 4 PMs
-		print!("{ITALIC}Select package [1-{}]: {RESET}", d);
+		print!("{ITALIC}\nSelect package [1-{}]: {RESET}", d);
 		let _ = io::stdout().flush();
 	}
 }
@@ -239,11 +239,12 @@ fn update_pkg(pm: &Pkgmgrs) {
 	for i in 0..pm.name.len() {
 		let noc = match pm.name[i].as_str() {
 			"pacman" | "paru" => "--color=always",
-			"apt" | "nala" => "-y",
+			"nala" => "--assume-yes",
 			_ => "--assumeyes"
 		};
 		if pm.name[i] == "pacman" || pm.name[i] == "nala" { // run with sudo.
-			if pm.name[i] == "pacman" {print_pacman()} // TODO
+			if pm.name[i] == "pacman" {print_pacman();} // TODO
+			else {print_apt();}
 			output = Command::new("sudo").arg(&pm.name[i]).arg(&pm.update_cmd[&pm.name[i]]).arg(noc)
 				.stdout(Stdio::piped()).spawn().expect("Failed to start command");
 		}
@@ -276,8 +277,9 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 	let mut output = Command::new("echo").arg("").stdout(Stdio::piped()).spawn().expect("");
 	for i in 0..pm.name.len() {
 		if pm.name[i] == "nala" {
+			print_apt();
 			output = Command::new("sh")
-				.args(["-c", &format!("sudo {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]])])
+				.args(["-c", &format!("sudo {} {} --assume-yes", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]])])
 				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 		}
 		else if pm.name[i] == "pacman" {
@@ -299,15 +301,15 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 			}
 
 			_ = Command::new("sh").args(["-c", &format!("sudo rm -f /var/lib/pacman/db.lck")]).spawn();
-			output = Command::new("sh").args(["-c", &format!("sudo {} {} {} --noconfirm", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], unused_pkgs_str)])
-				.stdout(Stdio::piped()).spawn().expect("No such pkg");
+			if unused_pkgs_str != "" {
+				output = Command::new("sh").args(["-c", &format!("sudo {} {} {} --noconfirm", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], unused_pkgs_str)])
+					.stdout(Stdio::piped()).spawn().expect("No such pkg");
+			}
 			if let Some(stdout) = output.stdout.take() {
 				let reader = BufReader::new(stdout);
 				for line in reader.lines() {
 					if let Ok(line) = line {
-						if !line.contains("no targets specified") {
-							println!("{line}");
-						}
+						if unused_pkgs.len() != 0 { println!("{line}"); }
 					}
 				}
 			}
@@ -464,10 +466,16 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
     for i in 0..pm.name.len() {
         let mut output;
         if pm.name[i] == "flatpak" {
+            print_flatpak();
             output = Command::new(pm.name[i].clone()).args([&pm.search_local_cmd[&pm.name[i]], "--columns=application"])
                 .stdout(Stdio::piped()).spawn().expect("");
         }
         else {
+            if pm.name[i]=="pacman" {
+                print_pacman();
+            } else if pm.name[i]=="nala" {
+                print_apt();
+            }
             output = Command::new(pm.name[i].clone()).args([&pm.search_local_cmd[&pm.name[i]], pkg]).stdout(Stdio::piped()).spawn()
                 .expect("");
         }
