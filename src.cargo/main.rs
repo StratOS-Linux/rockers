@@ -385,7 +385,7 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if inst_pkgmgr == "flatpak" {
-		output = Command::new(&inst_pkgmgr).arg(&inst_pkgmgr).arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc)
+		output = Command::new(&inst_pkgmgr).arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc)
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	
