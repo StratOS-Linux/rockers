@@ -783,7 +783,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 
 				else if pm.name[i] == "emerge" && !line.is_empty() && !line.contains("Searching") && !line.contains("No matches") {
 					let fwi = line.find(char::is_whitespace).unwrap_or(line.len());
-					let pkg_name = &line[..fwi];f
+					let pkg_name = &line[..fwi];
 					if !pkg_name.is_empty() && !res_string.contains(pkg_name) {
 						println!("[{BLUE}{}{RESET}]: {BOLD}{ITALIC}{}{RESET} [{BLUE}{}{RESET}]{RESET}", index, pkg_name, "emerge");
 						res_string += pkg_name;
@@ -876,8 +876,7 @@ fn main() {
 	} else {
 		println!("{BOLD}{ITALIC} 󰄱 {VIOLET} Paru 󰣇 {RESET}");
 	}
-	// TODO add aur/ prefix to AUR packages, core/ prefix to core packages etc.
-	if pkgmgr_found("/usr/bin/flatpak1") { // disable flatpak for now (Jul 25 2026) or find out how to invoke flatpak --user
+	if pkgmgr_found("/usr/bin/flatpak") {
 		println!("{BOLD}{ITALIC} 󰱒 {GREEN} Flatpak  {RESET}");
 		pm.name.push("flatpak".to_string());
 		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
@@ -907,7 +906,7 @@ fn main() {
 		println!("{BOLD}{ITALIC} 󰄱 {YELLOW} Apt   {RESET}");
 	}
 
-	if pkgmgr_found("/usr/bin/dnf5") {
+	if pkgmgr_found("/bedrock/cross/bin/dnf5") {
 		println!("{BOLD}{ITALIC} 󰱒 {RED} DNF5  {RESET}");
 		pm.name.push("dnf5".to_string());
 		pm.install_cmd.insert(pm.name[pm.name.len()-1].clone(), "install".to_string());
