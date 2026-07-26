@@ -229,7 +229,7 @@ fn info_pkg(pm: &Pkgmgrs, pkg: &str) {
 	
 	if info_pkgmgr == "flatpak" {
 		output = Command::new(&info_pkgmgr)
-			.args([&pm.info_cmd[info_pkgmgr], "flathub", info_pkgname])
+			.args(["--user", &pm.info_cmd[info_pkgmgr], "flathub", info_pkgname])
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else {
@@ -276,7 +276,7 @@ fn update_pkg(pm: &Pkgmgrs) {
 		}
 		else if pm.name[i] == "flatpak" {
 			print_flatpak();
-			output = Command::new(&pm.name[i]).arg(&pm.update_cmd[&pm.name[i]]).arg(noc)
+			output = Command::new(&pm.name[i]).arg("--user").arg(&pm.update_cmd[&pm.name[i]]).arg(noc)
 				.stdout(Stdio::piped()).spawn().expect("Failed to start command");
 		}
 		else if pm.name[i] == "emerge" {
@@ -343,7 +343,7 @@ fn cleanup_pkg(pm: &Pkgmgrs) {
 	        "flatpak" => { // no need to check for paru.
     			print_flatpak();
     			output = Command::new("sh")
-    				.args(["-c", &format!("{} {} {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], "--unused", "--assumeyes")])
+    				.args(["-c", &format!("{} --user {} {} {}", &pm.name[i], &pm.cleanup_cmd[&pm.name[i]], "--unused", "--assumeyes")])
     				.stdout(Stdio::piped()).spawn().expect("No such pkg");
 			},
 			"dnf5" => {
@@ -435,7 +435,7 @@ fn install_pkg(pm: &Pkgmgrs, pkg: &str) {
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if inst_pkgmgr == "flatpak" {
-		output = Command::new(&inst_pkgmgr).arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc)
+		output = Command::new(&inst_pkgmgr).arg("--user").arg(&pm.install_cmd[inst_pkgmgr]).arg(inst_pkgname).arg(noc)
 			.stdout(Stdio::piped()).spawn().expect("No such pkg");
 	}
 	else if inst_pkgmgr == "dnf5" {
@@ -511,8 +511,13 @@ fn remove_pkg(pm: &Pkgmgrs, pkg: &str) {
 	else if rm_pkgmgr == "paru" || rm_pkgmgr == "flatpak" {
 		if rm_pkgmgr=="paru" {print_paru();}
 		else {print_flatpak()}
-		output = Command::new("sh").args(["-c", &format!("{} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
-			.stdout(Stdio::piped()).spawn().expect("No such pkg");
+		if rm_pkgmgr == "flatpak" {
+			output = Command::new("sh").args(["-c", &format!("{} --user {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
+				.stdout(Stdio::piped()).spawn().expect("No such pkg");
+		} else {
+			output = Command::new("sh").args(["-c", &format!("{} {} {}", &rm_pkgmgr, &pm.remove_cmd[rm_pkgmgr], rm_pkgname)])
+				.stdout(Stdio::piped()).spawn().expect("No such pkg");
+		}
 	}
 	else if rm_pkgmgr == "dnf5" {
 		print_dnf();
@@ -551,7 +556,7 @@ fn display_local_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
         let mut output;
         if pm.name[i] == "flatpak" {
             print_flatpak();
-            output = Command::new(pm.name[i].clone()).args([&pm.search_local_cmd[&pm.name[i]], "--columns=application"])
+            output = Command::new(pm.name[i].clone()).args(["--user", &pm.search_local_cmd[&pm.name[i]], "--columns=application"])
                 .stdout(Stdio::piped()).spawn().expect("");
         }
         else {
@@ -683,7 +688,7 @@ fn display_pkg(pm: &Pkgmgrs, pkg: &str) -> PkgResult {
 		if pm.name[i] == "flatpak" {
 			print_flatpak();
 			output = Command::new(pm.name[i].clone())
-				.args([&pm.search_cmd[&pm.name[i]], pkg, "--columns=application"]).stdout(Stdio::piped()).spawn()
+				.args(["--user", &pm.search_cmd[&pm.name[i]], pkg, "--columns=application"]).stdout(Stdio::piped()).spawn()
 				.expect("");
 		}
 		else {
@@ -876,7 +881,7 @@ fn main() {
 	} else {
 		println!("{BOLD}{ITALIC} 󰄱 {VIOLET} Paru 󰣇 {RESET}");
 	}
-	if pkgmgr_found("/usr/bin/flatpak") {
+	if pkgmgr_found("/usr/bin/flatpak1") {
 		println!("{BOLD}{ITALIC} 󰱒 {GREEN} Flatpak  {RESET}");
 		pm.name.push("flatpak".to_string());
 		pm.install_cmd.insert(pm.name[2].clone(), "install".to_string());
